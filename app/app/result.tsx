@@ -1,5 +1,6 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import BigButton from '../components/BigButton';
 import type { ScanResult } from '../lib/api';
 
 const rows = [
@@ -11,6 +12,7 @@ const rows = [
 
 export default function Result() {
   const { data } = useLocalSearchParams<{ data: string }>();
+  const router = useRouter();
   const { drugs, source }: ScanResult = JSON.parse(data);
 
   return (
@@ -26,6 +28,11 @@ export default function Result() {
           ))}
         </View>
       ))}
+      <BigButton
+        label="복약 시간 정하기"
+        color="#0D47A1"
+        onPress={() => router.push({ pathname: '/plan', params: { drugs: JSON.stringify(drugs.map((d) => d.name)) } })}
+      />
       <Text style={styles.source}>출처: {source}</Text>
     </ScrollView>
   );

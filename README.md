@@ -22,7 +22,7 @@ Expo(React Native, TypeScript, Expo Router) · FastAPI · iPhone + Expo Go
 ## 진행 상황
 - [x] 1단계 뼈대 (홈 큰 버튼 3개, BigButton, `/health`, 앱→서버 호출)
 - [x] 2단계 약 사진 인식 (mock 응답. OCR·e약은요·LLM 키 연결은 대기)
-- [ ] 3단계 복약 알림
+- [x] 3단계 복약 알림 (가족 녹음 재생, 먹었어요 기록, 중복 경고. 실기기 확인 대기)
 - [ ] 4단계 캘린더 + 진료 기록
 - [ ] 5단계 맞춤 의료기관 안내
 - [ ] 6단계 커뮤니티
