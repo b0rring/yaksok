@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import BigButton from '../components/BigButton';
 import { getHealth } from '../lib/api';
 
 export default function Home() {
+  const router = useRouter();
   const [online, setOnline] = useState<boolean | null>(null);
   useEffect(() => {
     getHealth().then(setOnline);
@@ -15,7 +17,7 @@ export default function Home() {
     <View style={styles.wrap}>
       <Text style={styles.title}>약속</Text>
       <View style={styles.buttons}>
-        <BigButton label="약 찍기" onPress={soon} />
+        <BigButton label="약 찍기" onPress={() => router.push('/scan')} />
         <BigButton label="오늘 약" onPress={soon} color="#0D47A1" />
         <BigButton label="캘린더" onPress={soon} color="#E65100" />
       </View>
