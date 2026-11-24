@@ -14,7 +14,7 @@ export async function getHealth(): Promise<boolean> {
 
 export async function scanImage(uri: string): Promise<ScanResult> {
   const form = new FormData();
-  form.append('file', { uri, name: 'photo.jpg', type: 'image/jpeg' } as any);
+  form.append('file', await (await fetch(uri)).blob(), 'photo.jpg');
   const r = await fetch(`${BASE}/scan`, { method: 'POST', body: form });
   if (!r.ok) throw new Error(String(r.status));
   return r.json();
