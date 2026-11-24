@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import BigButton from '../components/BigButton';
 import { getHealth } from '../lib/api';
@@ -11,15 +11,13 @@ export default function Home() {
     getHealth().then(setOnline);
   }, []);
 
-  const soon = () => Alert.alert('준비 중이에요');
-
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>약속</Text>
       <View style={styles.buttons}>
         <BigButton label="약 찍기" onPress={() => router.push('/scan')} />
         <BigButton label="오늘 약" onPress={() => router.push('/today')} color="#0D47A1" />
-        <BigButton label="캘린더" onPress={soon} color="#E65100" />
+        <BigButton label="캘린더" onPress={() => router.push('/calendar')} color="#E65100" />
       </View>
       <Pressable onPress={() => router.push('/more')} style={styles.more}>
         <Text style={styles.moreText}>더보기</Text>

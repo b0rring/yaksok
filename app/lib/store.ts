@@ -24,4 +24,9 @@ export const savePlan = (p: Plan) => write('plan', p);
 
 export const getLogs = () => read<Log[]>('logs', []);
 export const isTaken = async (slot: Slot) => (await getLogs()).some((l) => l.date === today() && l.slot === slot);
-export const addLog = async (slot: Slot) => write('logs', [...(await getLogs()), { date: today(), slot }]);
+export type Visit = { id: string; date: string; hospital: string; reason: string; summary: string };
+export const getVisits = () => read<Visit[]>('visits', []);
+export const addVisit = async (v: Omit<Visit, 'id' | 'date'>) =>
+  write('visits', [...(await getVisits()), { ...v, id: String(Date.now()), date: today() }]);
+
+export const addLog =async (slot: Slot) => write('logs', [...(await getLogs()), { date: today(), slot }]);

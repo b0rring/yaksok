@@ -12,10 +12,15 @@ export async function getHealth(): Promise<boolean> {
   }
 }
 
-export async function scanImage(uri: string): Promise<ScanResult> {
+async function upload<T>(path: string, uri: string): Promise<T> {
   const form = new FormData();
   form.append('file', await (await fetch(uri)).blob(), 'photo.jpg');
-  const r = await fetch(`${BASE}/scan`, { method: 'POST', body: form });
+  const r = await fetch(`${BASE}${path}`, { method: 'POST', body: form });
   if (!r.ok) throw new Error(String(r.status));
   return r.json();
 }
+
+export type VisitSummary = { hospital: string; reason: string; summary: string };
+
+export const scanImage = (uri: string) => upload<ScanResult>('/scan', uri);
+export const scanVisit = (uri: string) => upload<VisitSummary>('/visit', uri);
