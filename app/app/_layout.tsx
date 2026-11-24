@@ -7,7 +7,7 @@ export default function Layout() {
   const router = useRouter();
   const last = Notifications.useLastNotificationResponse();
   useEffect(() => {
-    if (last) router.push('/today?play=1');
+    if (last) router.push('/today');
   }, [last?.notification.request.identifier]);
 
   return <Stack screenOptions={{ headerTitleStyle: { fontSize: 24 } }} />;

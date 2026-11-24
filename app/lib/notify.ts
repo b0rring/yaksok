@@ -11,7 +11,7 @@ Notifications.setNotificationHandler({
 });
 
 const title = '약 드실 시간이에요';
-const body = '눌러서 가족 목소리를 들어보세요.';
+const body = '눌러서 오늘 약을 확인하세요.';
 
 export async function scheduleSlots(slots: Slot[]) {
   const p = await Notifications.requestPermissionsAsync();

@@ -1,12 +1,10 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import BigButton from '../components/BigButton';
 import { Plan, SLOTS, Slot, addLog, getPlan, isTaken } from '../lib/store';
-import { playVoice } from '../lib/voice';
 
 export default function Today() {
-  const { play } = useLocalSearchParams<{ play?: string }>();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [taken, setTaken] = useState<Slot[]>([]);
 
@@ -18,7 +16,6 @@ export default function Today() {
     setTaken(done);
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
-  useEffect(() => { if (play) playVoice(); }, [play]);
 
   const eat = (s: Slot) => {
     const done = async () => { await addLog(s); load(); };
@@ -28,10 +25,6 @@ export default function Today() {
         { text: '그래도 먹었어요', style: 'destructive', onPress: done },
       ]);
     else done();
-  };
-
-  const listen = async () => {
-    if (!(await playVoice())) Alert.alert('녹음이 없어요', '더보기에서 먼저 녹음해 주세요.');
   };
 
   if (!plan)
@@ -50,7 +43,6 @@ export default function Today() {
           />
         </View>
       ))}
-      <BigButton label="가족 목소리 듣기" color="#E65100" onPress={listen} />
     </ScrollView>
   );
 }

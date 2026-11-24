@@ -1,13 +1,10 @@
-import { useRouter } from 'expo-router';
 import { Alert, StyleSheet, View } from 'react-native';
 import BigButton from '../components/BigButton';
 import { testIn5s } from '../lib/notify';
 
 export default function More() {
-  const router = useRouter();
   return (
     <View style={styles.wrap}>
-      <BigButton label="가족 목소리 녹음" onPress={() => router.push('/record')} />
       <BigButton
         label="알림 시험 (5초 뒤)"
         color="#0D47A1"

@@ -25,6 +25,3 @@ export const savePlan = (p: Plan) => write('plan', p);
 export const getLogs = () => read<Log[]>('logs', []);
 export const isTaken = async (slot: Slot) => (await getLogs()).some((l) => l.date === today() && l.slot === slot);
 export const addLog = async (slot: Slot) => write('logs', [...(await getLogs()), { date: today(), slot }]);
-
-export const getVoice = () => read<string | null>('voice', null);
-export const saveVoice = (uri: string) => write('voice', uri);
