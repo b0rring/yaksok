@@ -10,7 +10,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "약 사진을 찍기 위해 카메라를 사용해요.",
-        "NSPhotoLibraryUsageDescription": "약 사진을 고르기 위해 앨범을 사용해요."
+        "NSPhotoLibraryUsageDescription": "약 사진을 고르기 위해 앨범을 사용해요.",
+        "NSMicrophoneUsageDescription": "진료 때 의사 선생님 말씀을 녹음하기 위해 마이크를 사용해요."
       }
     },
     "android": {
@@ -27,7 +28,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-audio"
     ]
   }
 }

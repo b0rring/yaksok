@@ -13,6 +13,7 @@ Notifications.setNotificationHandler({
 const title = '약 드실 시간이에요';
 const body = '눌러서 오늘 약을 확인하세요.';
 
+// 시간대 목록으로 알림을 통째로 다시 예약 (중복 알림 방지)
 export async function scheduleSlots(slots: Slot[]) {
   const p = await Notifications.requestPermissionsAsync();
   if (!p.granted) return false;

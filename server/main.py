@@ -17,7 +17,7 @@ def health():
 
 @app.post("/scan")
 async def scan_image(file: UploadFile):
-    return {"drugs": scan(await file.read()), "source": "식약처 e약은요"}
+    return {**scan(await file.read()), "source": "식약처 e약은요"}
 
 
 @app.post("/visit")

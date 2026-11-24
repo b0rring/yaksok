@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import BigButton from '../components/BigButton';
 import { scheduleSlots } from '../lib/notify';
-import { SLOTS, Slot, savePlan } from '../lib/store';
+import { SLOTS, Slot, addPlan, allActiveSlots } from '../lib/store';
+import { C } from '../lib/theme';
 
+// 보조 기능: 자동으로 정해진 시간이 아닌 다른 시간에 먹을 때 직접 고른다.
 export default function Plan() {
   const router = useRouter();
   const { drugs } = useLocalSearchParams<{ drugs: string }>();
@@ -14,8 +16,8 @@ export default function Plan() {
 
   const save = async () => {
     if (!picked.length) return Alert.alert('시간을 골라 주세요');
-    await savePlan({ drugs: JSON.parse(drugs), slots: picked });
-    if (!(await scheduleSlots(picked))) Alert.alert('알림을 켜 주세요', '설정에서 알림을 허용해 주세요.');
+    await addPlan({ drugs: JSON.parse(drugs), slots: picked, days: 7 });
+    if (!(await scheduleSlots(await allActiveSlots()))) Alert.alert('알림을 켜 주세요', '설정에서 알림을 허용해 주세요.');
     router.replace('/today');
   };
 
@@ -26,16 +28,16 @@ export default function Plan() {
         <BigButton
           key={s.id}
           label={`${picked.includes(s.id) ? '✓ ' : ''}${s.label}`}
-          color={picked.includes(s.id) ? '#1B5E20' : '#9E9E9E'}
+          color={picked.includes(s.id) ? C.green : C.gray}
           onPress={() => toggle(s.id)}
         />
       ))}
-      <BigButton label="저장" color="#0D47A1" onPress={save} />
+      <BigButton label="저장" color={C.blue} onPress={save} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: '#fff', padding: 24, justifyContent: 'center', gap: 16 },
-  text: { fontSize: 32, fontWeight: '800', textAlign: 'center', marginBottom: 8 },
+  wrap: { flex: 1, backgroundColor: C.bg, padding: 24, justifyContent: 'center', gap: 16 },
+  text: { fontSize: 32, fontWeight: '900', textAlign: 'center', marginBottom: 8, color: C.text },
 });
