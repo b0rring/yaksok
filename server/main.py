@@ -15,11 +15,12 @@ def health():
     return {"status": "ok"}
 
 
+# AI 호출은 몇 초 걸리는 동기 함수라 async가 아닌 일반 def로 둬서 서버가 다른 요청(/health)을 계속 받게 한다.
 @app.post("/scan")
-async def scan_image(file: UploadFile):
-    return {**scan(await file.read()), "source": "식약처 e약은요"}
+def scan_image(file: UploadFile):
+    return scan(file.file.read())
 
 
 @app.post("/visit")
-async def visit(file: UploadFile):
-    return summarize_visit(await file.read())
+def visit(file: UploadFile):
+    return summarize_visit(file.file.read())
