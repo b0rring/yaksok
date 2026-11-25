@@ -1,38 +1,40 @@
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import HeaderLeft from '../components/HeaderLeft';
 import '../lib/notify';
 import { C } from '../lib/theme';
 
-const titles: Record<string, string> = {
-  index: '약속',
-  scan: '약 찍기',
+// 탭 화면은 (tabs) 안에, 나머지(결과·시간 고르기·보여주기·설정)는 여기서 뒤로 가기가 있는 화면으로 연다.
+const TITLES: Record<string, string> = {
   result: '약 알아보기',
   plan: '복약 시간',
-  today: '오늘 약',
-  record: '진료 녹음',
   show: '의사에게 보여주기',
-  calendar: '캘린더',
-  more: '더보기',
+  more: '알림 · 설정',
 };
 
 export default function Layout() {
   const router = useRouter();
-  const last = Notifications.useLastNotificationResponse();
+  // 웹에는 알림 기능이 없어서 이 훅이 오류를 낸다 (플랫폼은 실행 중 바뀌지 않으므로 훅 순서는 안전)
+  const last = Platform.OS === 'web' ? null : Notifications.useLastNotificationResponse();
   useEffect(() => {
     if (last) router.push('/today');
   }, [last?.notification.request.identifier]);
 
   return (
     <Stack
-      screenOptions={({ route }) => ({
-        title: titles[route.name] ?? '',
-        headerBackTitle: '뒤로',
-        headerTitleStyle: { fontSize: 24, fontWeight: '800' },
+      screenOptions={{
+        headerLeft: ({ canGoBack }) => <HeaderLeft canGoBack={canGoBack} />,
+        headerTitleStyle: { fontSize: 24, fontWeight: '800', color: C.primary },
         headerStyle: { backgroundColor: C.bg },
         headerShadowVisible: false,
-        headerShown: route.name !== 'index',
-      })}
-    />
+      }}
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      {Object.entries(TITLES).map(([name, title]) => (
+        <Stack.Screen key={name} name={name} options={{ title }} />
+      ))}
+    </Stack>
   );
 }

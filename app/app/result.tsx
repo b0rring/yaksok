@@ -14,7 +14,18 @@ const rows = [
 export default function Result() {
   const router = useRouter();
   const { data, added } = useLocalSearchParams<{ data: string; added?: string }>();
-  const { drugs, source }: ScanResult = JSON.parse(data);
+  let parsed: ScanResult | null = null;
+  try {
+    parsed = JSON.parse(data);
+  } catch {}
+  if (!parsed?.drugs?.length)
+    return (
+      <View style={[styles.wrap, { flex: 1, justifyContent: 'center', backgroundColor: C.bg }]}>
+        <Text style={styles.added}>약 정보를 찾지 못했어요</Text>
+        <BigButton label="홈으로" onPress={() => router.navigate('/')} />
+      </View>
+    );
+  const { drugs, source } = parsed;
 
   return (
     <ScrollView contentContainerStyle={styles.wrap} style={{ backgroundColor: C.bg }}>
@@ -31,11 +42,12 @@ export default function Result() {
         </View>
       ))}
       <Text style={styles.source}>출처: {source}</Text>
-      <BigButton label="오늘 약 보기" color={C.blue} onPress={() => router.replace('/today')} />
+      <BigButton label="오늘 약 보기" onPress={() => router.navigate('/today')} />
+      <BigButton label="홈으로" variant="secondary" small onPress={() => router.navigate('/')} />
       {!added && (
         <BigButton
           label="시간 직접 정하기"
-          color={C.gray}
+          variant="secondary"
           small
           onPress={() =>
             router.push({ pathname: '/plan', params: { drugs: JSON.stringify(drugs.map((d) => d.name)) } })
@@ -49,7 +61,7 @@ export default function Result() {
 const styles = StyleSheet.create({
   wrap: { padding: 20, gap: 16 },
   added: { fontSize: 24, fontWeight: '800', color: C.green, textAlign: 'center' },
-  card: { backgroundColor: C.card, borderRadius: 24, padding: 20, gap: 14, borderWidth: 1, borderColor: C.line },
+  card: { backgroundColor: C.card, borderRadius: 20, padding: 20, gap: 14, borderWidth: 1, borderColor: C.line },
   name: { fontSize: 30, fontWeight: '900', color: C.text },
   row: { gap: 4 },
   label: { fontSize: 20, fontWeight: '800', color: C.green },

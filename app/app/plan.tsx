@@ -18,7 +18,7 @@ export default function Plan() {
     if (!picked.length) return Alert.alert('시간을 골라 주세요');
     await addPlan({ drugs: JSON.parse(drugs), slots: picked, days: 7 });
     if (!(await scheduleSlots(await allActiveSlots()))) Alert.alert('알림을 켜 주세요', '설정에서 알림을 허용해 주세요.');
-    router.replace('/today');
+    router.navigate('/today');
   };
 
   return (
@@ -28,11 +28,11 @@ export default function Plan() {
         <BigButton
           key={s.id}
           label={`${picked.includes(s.id) ? '✓ ' : ''}${s.label}`}
-          color={picked.includes(s.id) ? C.green : C.gray}
+          variant={picked.includes(s.id) ? 'primary' : 'secondary'}
           onPress={() => toggle(s.id)}
         />
       ))}
-      <BigButton label="저장" color={C.blue} onPress={save} />
+      <BigButton label="저장" onPress={save} />
     </View>
   );
 }

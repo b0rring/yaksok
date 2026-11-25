@@ -1,12 +1,12 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
-import BigButton from '../components/BigButton';
-import { ScanResult, scanImage } from '../lib/api';
-import { scheduleSlots } from '../lib/notify';
-import { Slot, addPlan, allActiveSlots, hasDuplicate, slotLabel } from '../lib/store';
-import { C } from '../lib/theme';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, View } from 'react-native';
+import BigButton from '../../components/BigButton';
+import { ScanResult, scanImage } from '../../lib/api';
+import { scheduleSlots } from '../../lib/notify';
+import { Slot, addPlan, allActiveSlots, hasDuplicate, slotLabel } from '../../lib/store';
+import { C } from '../../lib/theme';
 
 export default function Scan() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function Scan() {
   const started = useRef(false);
 
   const goResult = (data: ScanResult, added: boolean) =>
-    router.replace({ pathname: '/result', params: { data: JSON.stringify(data), added: added ? '1' : '' } });
+    router.push({ pathname: '/result', params: { data: JSON.stringify(data), added: added ? '1' : '' } });
 
   const add = async (data: ScanResult) => {
     await addPlan({ drugs: data.drugs.map((d) => d.name), slots: data.schedule.slots as Slot[], days: data.schedule.days });
@@ -46,7 +46,7 @@ export default function Scan() {
     if (camera && !(await ImagePicker.requestCameraPermissionsAsync()).granted)
       return Alert.alert('카메라를 켜 주세요', '설정에서 카메라를 허용해 주세요.');
     const res = camera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
-    if (res.canceled) return router.back();
+    if (res.canceled) return router.canGoBack() ? router.back() : router.navigate("/");
     setBusy(true);
     try {
       confirm(await scanImage(res.assets[0].uri));
@@ -73,9 +73,10 @@ export default function Scan() {
         </>
       ) : (
         <>
+          <Image source={require('../../assets/main.jpg')} style={styles.photo} />
           <Text style={styles.text}>약 봉투나 약을 찍어 주세요</Text>
           <BigButton label="사진 찍기" onPress={() => run(true)} />
-          <BigButton label="앨범에서 고르기" onPress={() => run(false)} color={C.blue} small />
+          <BigButton label="앨범에서 고르기" onPress={() => run(false)} variant="secondary" small />
         </>
       )}
     </View>
@@ -84,5 +85,6 @@ export default function Scan() {
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: C.bg, padding: 24, justifyContent: 'center', gap: 20 },
+  photo: { width: '100%', height: 160, borderRadius: 20 },
   text: { fontSize: 28, fontWeight: '800', textAlign: 'center', color: C.text },
 });

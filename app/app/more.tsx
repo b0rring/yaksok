@@ -8,7 +8,6 @@ export default function More() {
     <View style={styles.wrap}>
       <BigButton
         label="알림 시험 (5초 뒤)"
-        color={C.blue}
         onPress={async () => Alert.alert((await testIn5s()) ? '5초 뒤에 알림이 와요' : '알림을 켜 주세요')}
       />
     </View>
