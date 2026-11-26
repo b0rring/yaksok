@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './AppText';
 import { C, CARD, R } from '../lib/theme';
 
 // 앱 전용 확인 창. 기본 알림 창(Alert) 대신 이것만 쓴다.

@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../../components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../../components/Icon';
 import { C, CARD, S } from '../../lib/theme';

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../components/AppText';
 import BigButton from '../components/BigButton';
 import { useDialog } from '../components/Dialog';
 import { scheduleSlots } from '../lib/notify';
@@ -20,7 +21,7 @@ export default function Plan() {
     if (!picked.length) return ask({ title: '시간을 골라 주세요' });
     await addPlan({ drugs: JSON.parse(drugs), slots: picked, days: 7 });
     if (!(await scheduleSlots(await allActiveSlots()))) ask({ title: '알림을 켜 주세요', message: '설정에서 알림을 허용해 주세요.' });
-    router.navigate('/today');
+    router.navigate('/');
   };
 
   return (

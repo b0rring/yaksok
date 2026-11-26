@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
-from services import llm
+from services import edrug, llm
 
 MOCK = Path(__file__).parent.parent / "mock" / "drugs.json"
 SLOTS = ["morning", "noon", "evening"]
@@ -59,11 +59,17 @@ def image_mime(data: bytes) -> str:
     return "image/jpeg"
 
 
+def with_official(result: dict) -> dict:
+    # 읽은 약마다 식약처 e약은요 공식 설명을 붙인다 (못 찾으면 None → 앱이 "AI가 읽은 설명"이라고 표시)
+    for d in result["drugs"]:
+        d["official"] = edrug.lookup(d["name"])
+    return result
+
+
 def scan(image: bytes) -> dict:
     # GEMINI_API_KEY가 없으면 시연용 mock, 있으면 Gemini가 사진을 읽는다 (글자 읽기 + 쉬운 말 정리를 한 번에).
-    # ponytail: e약은요 대조는 아직 없음(MFDS_API_KEY 연결 시 여기서 약 이름으로 조회해 교차 확인).
     if not llm.enabled():
-        return {**json.loads(MOCK.read_text(encoding="utf-8")), "source": SOURCE_MOCK}
+        return with_official({**json.loads(MOCK.read_text(encoding="utf-8")), "source": SOURCE_MOCK})
 
     text = llm.ask(PROMPT, [(image, image_mime(image))], SCHEMA)
     try:
@@ -75,4 +81,4 @@ def scan(image: bytes) -> dict:
     sched = data.get("schedule") or {}
     slots = [s for s in sched.get("slots", []) if s in SLOTS] or ["morning"]
     days = max(1, min(int(sched.get("days") or 7), 90))
-    return {"drugs": data["drugs"], "schedule": {"slots": slots, "days": days}, "source": SOURCE_AI}
+    return with_official({"drugs": data["drugs"], "schedule": {"slots": slots, "days": days}, "source": SOURCE_AI})

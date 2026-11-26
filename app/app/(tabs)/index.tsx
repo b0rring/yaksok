@@ -1,17 +1,18 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
 import DoseRing from '../../components/DoseRing';
+import PlanList from '../../components/PlanList';
+import SpeakButton from '../../components/SpeakButton';
 import Icon from '../../components/Icon';
 import { getHealth } from '../../lib/api';
-import { today } from '../../lib/store';
-import { C, CARD, S } from '../../lib/theme';
+import { timeText, today } from '../../lib/store';
+import { C, S } from '../../lib/theme';
 import { useTodayMeds } from '../../lib/useTodayMeds';
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const timeText = (s: { hour: number; minute: number }) => `${s.hour < 12 ? '오전' : '오후'} ${s.hour % 12 || 12}:${pad(s.minute)}`;
 const diffText = (min: number) => {
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -36,7 +37,7 @@ export default function Home() {
     }, []),
   );
 
-  const { slots, eat } = useTodayMeds();
+  const { all, slots, eat, reload } = useTodayMeds();
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -58,6 +59,9 @@ export default function Home() {
         ? { title: '드실 시간이에요', big: `${next.label} 약`, small: timeText(next) }
         : { title: '다음 약까지', big: diffText(at(next) - nowMin), small: `${next.label} ${timeText(next)}` };
 
+  const speak = !slots.length
+    ? '아직 정해진 약이 없어요.'
+    : `오늘 드실 약이에요. ${slots.map((s) => `${s.label} 약은 ${s.drugs.join(', ')}.`).join(' ')}`;
   const [y, m, d] = today().split('-').map(Number);
   const dateText = `${m}월 ${d}일 ${'일월화수목금토'[new Date(y, m - 1, d).getDay()]}`;
 
@@ -94,30 +98,25 @@ export default function Home() {
           <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />
         ) : null}
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/today')}
-          style={({ pressed }) => [styles.link, CARD, pressed && { opacity: 0.7 }]}
-        >
-          <Text style={styles.linkText}>드시고 있는 약 보기</Text>
-        </Pressable>
+        <BigButton label="약에 대해 물어보기" variant="secondary" small onPress={() => router.push('/chat')} />
+
+        <PlanList all={all} reload={reload} />
 
         {online === false && <Text style={styles.offline}>서버에 연결되지 않았어요</Text>}
       </ScrollView>
+      <SpeakButton text={speak} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 32, gap: S.gap },
+  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 120, gap: S.gap },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48 },
   head: { fontSize: 24, fontWeight: '800', color: C.text },
   right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   date: { fontSize: 20, color: C.sub },
   gear: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   drugs: { fontSize: 22, textAlign: 'center', color: C.sub, lineHeight: 30 },
-  link: { minHeight: 64, alignItems: 'center', justifyContent: 'center' },
-  linkText: { fontSize: 22, fontWeight: '800', color: C.primary },
   offline: { fontSize: 18, textAlign: 'center', color: C.red },
 });

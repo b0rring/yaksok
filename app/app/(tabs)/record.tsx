@@ -1,7 +1,8 @@
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/AppText';
 import BigButton from '../../components/BigButton';
 import { useDialog } from '../../components/Dialog';
 import Icon from '../../components/Icon';

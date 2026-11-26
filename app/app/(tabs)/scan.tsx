@@ -1,7 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/AppText';
 import BigButton from '../../components/BigButton';
 import { useDialog } from '../../components/Dialog';
 import { ScanResult, scanImage } from '../../lib/api';

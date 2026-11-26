@@ -1,7 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/AppText';
 import BigButton from '../components/BigButton';
+import SpeakButton from '../components/SpeakButton';
 import { Visit, getVisits } from '../lib/store';
 import { C, CARD, S } from '../lib/theme';
 
@@ -26,8 +28,10 @@ export default function Show() {
         <BigButton label="홈으로" onPress={() => router.navigate('/')} />
       </View>
     );
+  const speak = `${v.hospital}. 병원에 간 이유: ${v.reason}. 의사 선생님 말씀: ${v.summary}`;
   return (
-    <ScrollView contentContainerStyle={styles.outer} style={{ backgroundColor: C.bg }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <ScrollView contentContainerStyle={styles.outer}>
       <View style={styles.wrap}>
       {!!saved && <Text style={styles.saved}>✓ 캘린더에 저장했어요</Text>}
       <Text style={styles.date}>{v.date}</Text>
@@ -47,11 +51,13 @@ export default function Show() {
         <BigButton label="홈으로" variant="secondary" small onPress={() => router.navigate('/')} />
       </View>
     </ScrollView>
+    <SpeakButton text={speak} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outer: { padding: S.page, paddingBottom: 32 },
+  outer: { padding: S.page, paddingBottom: 120 },
   wrap: { ...CARD, padding: 24, gap: 14 },
   saved: { fontSize: 24, fontWeight: '800', color: C.green },
   date: { fontSize: 40, fontWeight: '800', color: C.text },

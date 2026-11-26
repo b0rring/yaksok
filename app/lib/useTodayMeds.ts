@@ -1,15 +1,15 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useDialog } from '../components/Dialog';
-import { Plan, SLOTS, Slot, activePlans, addLog, isTaken, removeLog } from './store';
+import { Plan, SLOTS, Slot, getPlans, isActive, isTaken, addLog, removeLog } from './store';
 
 // 오늘 먹을 약 (시간대별) + "먹었어요" 처리. 홈과 오늘 약 화면이 함께 쓴다.
 export function useTodayMeds() {
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [all, setAll] = useState<Plan[]>([]); // 중지·끝난 약까지 모두
   const [taken, setTaken] = useState<Slot[]>([]);
 
   const load = useCallback(async () => {
-    setPlans(await activePlans());
+    setAll(await getPlans());
     const done: Slot[] = [];
     for (const s of SLOTS) if (await isTaken(s.id)) done.push(s.id);
     setTaken(done);
@@ -34,13 +34,14 @@ export function useTodayMeds() {
     });
   };
 
+  const plans = all.filter(isActive);
   const slots = SLOTS.map((s) => ({
     ...s,
     drugs: [...new Set(plans.filter((p) => p.slots.includes(s.id)).flatMap((p) => p.drugs))],
     done: taken.includes(s.id),
   })).filter((s) => s.drugs.length);
 
-  return { plans, slots, eat };
+  return { plans, all, slots, eat, reload: load };
 }
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];

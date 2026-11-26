@@ -1,4 +1,4 @@
-import { CalendarDays, Camera, Check, FileText, House, Mic, Pill, Settings, SquarePlus } from 'lucide-react-native';
+import { CalendarDays, Camera, Check, FileText, House, Mic, Minus, Pill, Plus, Settings, Square, SquarePlus, Volume2 } from 'lucide-react-native';
 
 // 앱 전체에서 쓰는 선(flat) 아이콘. 이모지 대신 이것만 쓴다.
 const ICONS = {
@@ -11,6 +11,10 @@ const ICONS = {
   hospital: SquarePlus,
   note: FileText,
   check: Check,
+  speaker: Volume2,
+  stop: Square,
+  minus: Minus,
+  plus: Plus,
 };
 export type IconName = keyof typeof ICONS;
 

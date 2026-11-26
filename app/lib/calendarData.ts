@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Plan, Visit, addDays, getLogs, getPlans, getVisits } from './store';
+import { Plan, Visit, addDays, getLogs, getPlans, getVisits, planEnd } from './store';
 
 export type Kind = 'plan' | 'taken' | 'visit';
 type Log = { date: string; slot: string };
@@ -24,7 +24,7 @@ export function useCalendarData() {
       const list = (m[date] ??= []);
       if (!list.includes(k)) list.push(k);
     };
-    for (const p of plans) for (let i = 0; i < p.days; i++) add(addDays(p.start, i), 'plan');
+    for (const p of plans) for (let d = p.start, end = planEnd(p); d <= end; d = addDays(d, 1)) add(d, 'plan');
     for (const l of logs) add(l.date, 'taken');
     for (const v of visits) add(v.date, 'visit');
     return m;

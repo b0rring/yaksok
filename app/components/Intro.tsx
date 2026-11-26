@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
+import { Text } from './AppText';
 import { C } from '../lib/theme';
 
 // 앱을 켤 때 한 번만 보이는 시작 화면. 그 뒤로는 화면 위에 "약속" 글자를 계속 두지 않는다.

@@ -1,7 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
 import { useDialog } from '../../components/Dialog';
@@ -9,7 +10,7 @@ import Icon from '../../components/Icon';
 import MonthGrid, { DOT_COLOR } from '../../components/MonthGrid';
 import { scanVisit } from '../../lib/api';
 import { Kind, useCalendarData } from '../../lib/calendarData';
-import { SLOTS, addDays, addVisit, today } from '../../lib/store';
+import { SLOTS, addDays, addVisit, planEnd, today } from '../../lib/store';
 import { C, CARD, R, S } from '../../lib/theme';
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
@@ -101,7 +102,7 @@ export default function CalendarScreen() {
     });
 
   // 고른 날의 타임라인: 시간대별 약 + 병원 방문
-  const dayPlans = plans.filter((p) => p.start <= sel && sel <= addDays(p.start, p.days - 1));
+  const dayPlans = plans.filter((p) => p.start <= sel && sel <= planEnd(p));
   const rows = SLOTS.map((s) => ({
     ...s,
     drugs: [...new Set(dayPlans.filter((p) => p.slots.includes(s.id)).flatMap((p) => p.drugs))],
@@ -186,7 +187,7 @@ export default function CalendarScreen() {
         <View>
           {rows.map((r, i) => (
             <View key={r.id} style={styles.row}>
-              <Text style={styles.time}>{timeText(r.hour, r.minute)}</Text>
+              <Text style={styles.time} numberOfLines={1}>{timeText(r.hour, r.minute)}</Text>
               <View style={styles.nodeCol}>
                 {r.taken ? (
                   <View style={[styles.node, { backgroundColor: C.primary }]}>
@@ -205,7 +206,7 @@ export default function CalendarScreen() {
           ))}
           {dayVisits.map((v, i) => (
             <View key={v.id} style={styles.row}>
-              <Text style={styles.time}>진료</Text>
+              <Text style={styles.time} numberOfLines={1}>진료</Text>
               <View style={styles.nodeCol}>
                 <View style={[styles.node, styles.nodeVisit]} />
                 {i < dayVisits.length - 1 && <View style={styles.line} />}
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
   dayTitle: { fontSize: 24, fontWeight: '800', color: C.text, marginTop: 8 },
   empty: { fontSize: 22, color: C.sub, paddingVertical: 8 },
   row: { flexDirection: 'row', alignItems: 'stretch' },
-  time: { width: 64, paddingTop: 14, paddingRight: 8, textAlign: 'right', fontSize: 20, fontWeight: '700', color: C.sub },
+  time: { width: 84, paddingTop: 14, paddingRight: 8, textAlign: 'right', fontSize: 20, fontWeight: '700', color: C.sub },
   nodeCol: { width: NODE + 12, alignItems: 'center', paddingTop: 10 },
   node: { width: NODE, height: NODE, borderRadius: NODE / 2, alignItems: 'center', justifyContent: 'center' },
   nodeTodo: { backgroundColor: '#fff', borderWidth: 6, borderColor: C.orange },

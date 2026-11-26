@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
+import { Text } from './AppText';
 import { C } from '../lib/theme';
 
 // 탭 밖 화면(결과·시간 고르기·보여주기·설정)의 왼쪽 위 버튼.

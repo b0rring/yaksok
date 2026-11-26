@@ -1,7 +1,9 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
+from services.chat import answer
 from services.scan import scan
 from services.visit import summarize_visit
 
@@ -24,3 +26,13 @@ def scan_image(file: UploadFile):
 @app.post("/visit")
 def visit(file: UploadFile):
     return summarize_visit(file.file.read())
+
+
+class ChatIn(BaseModel):
+    question: str
+    drugs: list[str] = []  # 앱에 등록된 약 이름 (질문에 약 이름이 없을 때 대상)
+
+
+@app.post("/chat")
+def chat(body: ChatIn):
+    return answer(body.question, body.drugs)
