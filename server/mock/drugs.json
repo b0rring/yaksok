@@ -1,4 +1,6 @@
 {
+  "condition": "감기와 고혈압",
+  "guess": true,
   "drugs": [
     {
       "name": "타이레놀정 500mg",

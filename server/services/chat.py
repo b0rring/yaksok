@@ -39,6 +39,28 @@ def _names_in(question: str) -> list[str]:
         return []
 
 
+AI_PROMPT = """식약처 공식 정보에서 답을 찾지 못한 질문입니다. 일반적인 의학 상식 범위에서만, 노약자가 읽을 쉬운 우리말 두세 문장으로 답하세요.
+
+규칙:
+- 확실하지 않으면 지어내지 말고 answer에 "{not_found}"라고만 쓰고 found를 false로 하세요.
+- 진단하거나, 복용량을 바꾸라고 하거나, 새 약을 권하지 마세요. 마지막에 의사나 약사에게 확인하라고 덧붙이세요.
+
+[질문]
+{question}"""
+
+
+def _ai_answer(q: str) -> dict:
+    """공식 정보가 없을 때: AI가 일반 지식으로 답한다. 앱이 "공식 정보 아님"이라고 표시하도록 ai=True."""
+    if llm.enabled():
+        try:
+            data = json.loads(llm.ask(AI_PROMPT.format(not_found=NOT_FOUND, question=q), [], SCHEMA))
+            if data.get("found") and data.get("answer"):
+                return {"answer": data["answer"], "sources": [], "demo": False, "ai": True}
+        except (HTTPException, json.JSONDecodeError):
+            pass
+    return {"answer": NOT_FOUND, "sources": [], "demo": False, "ai": False}
+
+
 def answer(question: str, drugs: list[str]) -> dict:
     q = question.strip()[:300]
     if not q:
@@ -49,12 +71,12 @@ def answer(question: str, drugs: list[str]) -> dict:
     names = [d for d in drugs if edrug.clean(d) in q] or _names_in(q) or drugs
     infos = [i for n in names[:3] if (i := edrug.lookup(n))]
     if not infos:
-        return {"answer": NOT_FOUND, "sources": [], "demo": False}
+        return _ai_answer(q)
 
     demo = any(i["demo"] for i in infos)
     sources = [i["name"] for i in infos]
     if not llm.enabled():  # AI 키가 없으면 공식 효능 문장을 그대로 보여준다 (시연용)
-        return {"answer": "\n".join(f"{i['name']}: {i['efcy']}" for i in infos), "sources": sources, "demo": True}
+        return {"answer": "\n".join(f"{i['name']}: {i['efcy']}" for i in infos), "sources": sources, "demo": True, "ai": False}
 
     info = "\n\n".join(
         f"약 이름: {i['name']}\n효능: {i['efcy']}\n사용법: {i['use']}\n주의사항: {i['warn']} {i['atpn']}\n상호작용: {i['intrc']}\n부작용: {i['se']}\n보관법: {i['deposit']}"[:2000]
@@ -65,4 +87,6 @@ def answer(question: str, drugs: list[str]) -> dict:
         data = json.loads(text)
     except json.JSONDecodeError:
         raise HTTPException(502, "AI 응답을 읽지 못했어요")
-    return {"answer": data.get("answer") or NOT_IN_INFO, "sources": sources, "demo": demo}
+    if not data.get("found", True):  # 공식 정보에 답이 없으면 공식 답인 척하지 않고 AI 답변으로 돌린다
+        return _ai_answer(q)
+    return {"answer": data.get("answer") or NOT_IN_INFO, "sources": sources, "demo": demo, "ai": False}

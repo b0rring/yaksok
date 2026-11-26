@@ -1,9 +1,12 @@
+import os
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from services.chat import answer
+from services.organize import organize
 from services.scan import scan
 from services.visit import summarize_visit
 
@@ -36,3 +39,19 @@ class ChatIn(BaseModel):
 @app.post("/chat")
 def chat(body: ChatIn):
     return answer(body.question, body.drugs)
+
+
+class OrganizeIn(BaseModel):
+    condition: str = ""
+    drugs: list[dict]  # [{name, effect, how, caution, avoid}] — 빈 칸을 AI가 채운다
+
+
+@app.post("/organize")
+def organize_drugs(body: OrganizeIn):
+    return organize(body.condition, body.drugs)
+
+
+@app.get("/config")
+def config():
+    # 카카오 지도 JS 키는 원래 웹에 공개되는 값이라 앱에 알려 준다 (사용할 사이트 주소는 카카오 개발자 콘솔에 등록)
+    return {"kakaoKey": os.getenv("KAKAO_JS_KEY", "")}

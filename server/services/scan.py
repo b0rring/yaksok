@@ -25,6 +25,8 @@ SCHEMA = {
                 "required": ["name", "effect", "how", "caution", "avoid"],
             },
         },
+        "condition": {"type": "string"},
+        "guess": {"type": "boolean"},
         "schedule": {
             "type": "object",
             "properties": {
@@ -42,6 +44,8 @@ PROMPT = """이 사진은 약 봉투, 처방전 또는 약 사진입니다. 노�
 - drugs: 사진에 보이는 약마다 한 개. name은 보이는 약 이름과 용량을 그대로 적고, 읽을 수 없으면 추측하지 말고 빼세요.
   effect는 무엇에 쓰는 약인지, how는 먹는 법, caution은 조심할 점, avoid는 같이 먹으면 안 되는 것을 각각 한두 문장으로 쓰세요.
   확실하지 않은 내용은 지어내지 말고 "의사나 약사에게 물어보세요."라고 쓰세요.
+- condition: 이 약들을 무슨 병·증상 때문에 처방받았는지 짧은 우리말 명사로(예: 편도염, 고혈압, 감기). 봉투·처방전에 병명이나 증상이 적혀 있으면
+  그대로 쓰고 guess=false. 적혀 있지 않으면 약들의 효능으로 가장 가능성 높은 것을 쓰고 guess=true. 짐작도 어려우면 condition을 빈 글자로 두고 guess=false.
 - schedule: 봉투나 처방전에 인쇄된 복용법에서 읽으세요. slots는 아침=morning, 점심=noon, 저녁=evening, days는 복용 일수입니다.
   인쇄된 복용법이 없으면 slots=["morning"], days=7로 두세요.
 - 약이 보이지 않는 사진이면 drugs를 빈 배열로 두세요.
@@ -81,4 +85,13 @@ def scan(image: bytes) -> dict:
     sched = data.get("schedule") or {}
     slots = [s for s in sched.get("slots", []) if s in SLOTS] or ["morning"]
     days = max(1, min(int(sched.get("days") or 7), 90))
-    return with_official({"drugs": data["drugs"], "schedule": {"slots": slots, "days": days}, "source": SOURCE_AI})
+    condition = str(data.get("condition") or "").strip()[:20]
+    return with_official(
+        {
+            "drugs": data["drugs"],
+            "schedule": {"slots": slots, "days": days},
+            "source": SOURCE_AI,
+            "condition": condition,
+            "guess": bool(data.get("guess")) and bool(condition),
+        }
+    )
