@@ -48,6 +48,8 @@ type Log = { date: string; slot: Slot };
 export const getLogs = () => read<Log[]>('logs', []);
 export const isTaken = async (slot: Slot) => (await getLogs()).some((l) => l.date === today() && l.slot === slot);
 export const addLog = async (slot: Slot) => write('logs', [...(await getLogs()), { date: today(), slot }]);
+// 오늘 그 시간대의 먹은 기록을 모두 지운다 ("먹었어요" 취소)
+export const removeLog = async (slot: Slot) => write('logs', (await getLogs()).filter((l) => !(l.date === today() && l.slot === slot)));
 
 // ── 진료 기록 ──
 export type Visit = {

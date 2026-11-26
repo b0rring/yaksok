@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Kind } from '../lib/calendarData';
 import { C } from '../lib/theme';
 
-export const DOT_COLOR: Record<Kind, string> = { plan: '#7A7A7A', taken: C.primary, visit: C.orange };
+export const DOT_COLOR: Record<Kind, string> = { plan: C.gray, taken: C.primary, visit: C.orange };
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 const pad = (n: number) => String(n).padStart(2, '0');
 

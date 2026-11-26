@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import BigButton from '../components/BigButton';
 import type { ScanResult } from '../lib/api';
-import { C } from '../lib/theme';
+import { C, CARD, S } from '../lib/theme';
 
 const rows = [
   ['효과', 'effect'],
@@ -61,8 +61,8 @@ export default function Result() {
 const styles = StyleSheet.create({
   wrap: { padding: 20, gap: 16 },
   added: { fontSize: 24, fontWeight: '800', color: C.green, textAlign: 'center' },
-  card: { backgroundColor: C.card, borderRadius: 20, padding: 20, gap: 14, borderWidth: 1, borderColor: C.line },
-  name: { fontSize: 30, fontWeight: '900', color: C.text },
+  card: { ...CARD, padding: S.pad, gap: 14 },
+  name: { fontSize: 30, fontWeight: '800', color: C.text },
   row: { gap: 4 },
   label: { fontSize: 20, fontWeight: '800', color: C.green },
   body: { fontSize: 22, lineHeight: 32, color: C.text },

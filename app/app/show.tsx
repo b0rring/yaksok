@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import BigButton from '../components/BigButton';
 import { Visit, getVisits } from '../lib/store';
-import { C } from '../lib/theme';
+import { C, CARD, S } from '../lib/theme';
 
 // "의사에게 보여주기" 전체 화면. 녹음 직후에는 저장 완료 안내(saved)도 함께 보여준다.
 export default function Show() {
@@ -51,11 +51,11 @@ export default function Show() {
 }
 
 const styles = StyleSheet.create({
-  outer: { padding: 16 },
-  wrap: { backgroundColor: C.card, borderRadius: 20, borderWidth: 1, borderColor: C.line, padding: 24, gap: 14 },
+  outer: { padding: S.page, paddingBottom: 32 },
+  wrap: { ...CARD, padding: 24, gap: 14 },
   saved: { fontSize: 24, fontWeight: '800', color: C.green },
-  date: { fontSize: 40, fontWeight: '900', color: C.text },
-  hospital: { fontSize: 44, fontWeight: '900', color: C.text },
+  date: { fontSize: 40, fontWeight: '800', color: C.text },
+  hospital: { fontSize: 44, fontWeight: '800', color: C.text },
   label: { fontSize: 26, fontWeight: '800', color: C.green, marginTop: 12 },
   big: { fontSize: 36, lineHeight: 52, fontWeight: '700', color: C.text },
   small: { fontSize: 22, lineHeight: 32, color: C.sub },

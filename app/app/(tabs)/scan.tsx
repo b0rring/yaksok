@@ -1,8 +1,9 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import BigButton from '../../components/BigButton';
+import { useDialog } from '../../components/Dialog';
 import { ScanResult, scanImage } from '../../lib/api';
 import { scheduleSlots } from '../../lib/notify';
 import { Slot, addPlan, allActiveSlots, hasDuplicate, slotLabel } from '../../lib/store';
@@ -10,6 +11,7 @@ import { C } from '../../lib/theme';
 
 export default function Scan() {
   const router = useRouter();
+  const ask = useDialog();
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
 
@@ -18,7 +20,7 @@ export default function Scan() {
 
   const add = async (data: ScanResult) => {
     await addPlan({ drugs: data.drugs.map((d) => d.name), slots: data.schedule.slots as Slot[], days: data.schedule.days });
-    await scheduleSlots(await allActiveSlots());
+    if (!(await scheduleSlots(await allActiveSlots()))) ask({ title: '알림을 켜 주세요', message: '설정에서 알림을 허용해 주세요.' });
     goResult(data, true);
   };
 
@@ -26,32 +28,46 @@ export default function Scan() {
   const confirm = (data: ScanResult) => {
     const names = data.drugs.map((d) => d.name);
     const when = data.schedule.slots.map(slotLabel).join(', ');
-    Alert.alert('알림과 캘린더에 추가할까요?', `${names.join(', ')}\n\n${when} · ${data.schedule.days}일 동안`, [
-      { text: '안 할래요', style: 'cancel', onPress: () => goResult(data, false) },
-      {
-        text: '추가',
-        onPress: async () => {
-          if (!(await hasDuplicate(names))) return add(data);
-          Alert.alert('이미 있는 약이에요', '같은 약의 알림이 이미 있어요.\n또 추가할까요?', [
-            { text: '아니요', style: 'cancel', onPress: () => goResult(data, false) },
-            { text: '또 추가', onPress: () => add(data) },
-          ]);
+    ask({
+      title: '알림과 캘린더에 추가할까요?',
+      message: `${names.join(', ')}\n\n${when} · ${data.schedule.days}일 동안`,
+      actions: [
+        {
+          label: '추가',
+          onPress: async () => {
+            if (!(await hasDuplicate(names))) return add(data);
+            ask({
+              title: '이미 있는 약이에요',
+              message: '같은 약의 알림이 이미 있어요.\n또 추가할까요?',
+              actions: [
+                { label: '또 추가', onPress: () => add(data) },
+                { label: '아니요', kind: 'secondary', onPress: () => goResult(data, false) },
+              ],
+            });
+          },
         },
-      },
-    ]);
+        { label: '안 할래요', kind: 'secondary', onPress: () => goResult(data, false) },
+      ],
+    });
   };
 
   const run = async (camera: boolean) => {
     const opts = { mediaTypes: ['images'] as ImagePicker.MediaType[], quality: 0.7 };
-    if (camera && !(await ImagePicker.requestCameraPermissionsAsync()).granted)
-      return Alert.alert('카메라를 켜 주세요', '설정에서 카메라를 허용해 주세요.');
-    const res = camera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
-    if (res.canceled) return router.canGoBack() ? router.back() : router.navigate("/");
+    let res: ImagePicker.ImagePickerResult;
+    try {
+      if (camera && !(await ImagePicker.requestCameraPermissionsAsync()).granted)
+        return ask({ title: '카메라를 켜 주세요', message: '설정에서 카메라를 허용해 주세요.' });
+      res = camera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
+    } catch {
+      return ask({ title: '사진을 가져오지 못했어요', message: '다시 눌러 주세요.' });
+    }
+    if (res.canceled) return router.canGoBack() ? router.back() : router.navigate('/');
     setBusy(true);
     try {
       confirm(await scanImage(res.assets[0].uri));
-    } catch {
-      Alert.alert('약을 읽지 못했어요', '잠시 뒤에 다시 해 주세요.');
+    } catch (e) {
+      const noDrug = e instanceof Error && e.message === '422';
+      ask({ title: noDrug ? '약을 찾지 못했어요' : '약을 읽지 못했어요', message: noDrug ? '약 이름이 잘 보이게 다시 찍어 주세요.' : '잠시 뒤에 다시 해 주세요.' });
     } finally {
       setBusy(false);
     }

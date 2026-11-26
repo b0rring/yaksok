@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import BigButton from '../../components/BigButton';
-import { C } from '../../lib/theme';
-import { todayText, useTodayMeds } from '../../lib/useTodayMeds';
+import BigButton from '../components/BigButton';
+import { C, CARD, S } from '../lib/theme';
+import { todayText, useTodayMeds } from '../lib/useTodayMeds';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -23,7 +23,8 @@ export default function Today() {
           <Text style={styles.title}>{s.label} 약</Text>
           <View style={styles.line} />
           <Text style={styles.body}>{s.drugs.join('\n')}</Text>
-          <BigButton label={s.done ? '✓ 먹었어요' : '먹었어요'} color={s.done ? C.gray : C.green} onPress={() => eat(s.id)} />
+          <BigButton label={s.done ? '✓ 먹었어요' : '먹었어요'} variant={s.done ? 'secondary' : 'primary'} onPress={() => eat(s.id)} />
+          {s.done && <Text style={styles.hint}>눌러서 먹은 기록을 취소할 수 있어요</Text>}
         </View>
       ))}
 
@@ -43,12 +44,13 @@ export default function Today() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: 20, gap: 16 },
+  wrap: { padding: S.page, paddingBottom: 32, gap: S.gap },
   date: { fontSize: 20, color: C.sub },
-  head: { fontSize: 36, fontWeight: '900', color: C.text },
-  card: { backgroundColor: C.card, borderRadius: 20, padding: 20, gap: 12, borderWidth: 1, borderColor: C.line },
+  head: { fontSize: 36, fontWeight: '800', color: C.text },
+  card: { ...CARD, padding: S.pad, gap: 14 },
+  hint: { fontSize: 18, color: C.sub, textAlign: 'center' },
   time: { fontSize: 20, color: C.sub },
-  title: { fontSize: 30, fontWeight: '900', color: C.text },
+  title: { fontSize: 30, fontWeight: '800', color: C.text },
   line: { height: 1, backgroundColor: C.line },
   body: { fontSize: 24, lineHeight: 36, fontWeight: '700', color: C.text },
   drugs: { fontSize: 22, fontWeight: '800', color: C.text },

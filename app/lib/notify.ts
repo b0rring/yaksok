@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Slot, SLOTS } from './store';
+import { Slot, SLOTS, allActiveSlots } from './store';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -35,4 +35,12 @@ export async function testIn5s() {
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5 },
   });
   return true;
+}
+
+// 앱을 열 때마다 호출: 진행 중인 복약 기준으로 알림을 맞춘다. 기간이 끝난 약의 알림은 사라진다.
+// 알림 권한을 새로 묻지는 않는다 (이미 허용된 경우에만 다시 예약).
+export async function syncNotifications() {
+  const slots = await allActiveSlots();
+  if (!slots.length) return Notifications.cancelAllScheduledNotificationsAsync();
+  if ((await Notifications.getPermissionsAsync()).granted) await scheduleSlots(slots);
 }
