@@ -49,7 +49,7 @@ export function GuideProvider({ children }: { children: ReactNode }) {
         <SafeAreaView style={styles.safe}>
           <View style={styles.body}>
             <View style={styles.circle}>
-              <Icon name={p.icon} size={64} color={C.primary} />
+              <Icon name={p.icon} size={54} color={C.primary} />
             </View>
             <Text style={styles.title}>{p.title}</Text>
             <Text style={styles.text}>{p.text}</Text>
@@ -76,13 +76,13 @@ export function GuideProvider({ children }: { children: ReactNode }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: S.page + 4, gap: S.gap },
-  circle: { ...CARD, width: 136, height: 136, borderRadius: 68, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  title: { fontSize: 32, fontWeight: '800', color: C.text, textAlign: 'center' },
-  text: { fontSize: 24, lineHeight: 36, color: C.sub, textAlign: 'center' },
-  dots: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.mist },
-  dotOn: { width: 28, backgroundColor: C.primary },
-  bottom: { padding: S.page, gap: 8 },
-  skip: { minHeight: 56, alignItems: 'center', justifyContent: 'center' },
-  skipText: { fontSize: 22, fontWeight: '800', color: C.sub },
+  circle: { ...CARD, width: 136, height: 136, borderRadius: 58, alignItems: 'center', justifyContent: 'center', marginBottom: 7 },
+  title: { fontSize: 27, fontWeight: '800', color: C.text, textAlign: 'center' },
+  text: { fontSize: 20, lineHeight: 31, color: C.sub, textAlign: 'center' },
+  dots: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  dot: { width: 8, height: 8, borderRadius: 5, backgroundColor: C.mist },
+  dotOn: { width: 24, backgroundColor: C.primary },
+  bottom: { padding: S.page, gap: 7 },
+  skip: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  skipText: { fontSize: 19, fontWeight: '800', color: C.sub },
 });

@@ -16,6 +16,7 @@ const TITLES: Record<string, string> = {
   result: '약 알아보기',
   plan: '복약 시간',
   show: '의사에게 보여주기',
+  edit: '약 고치기',
   more: '설정',
 };
 
@@ -42,7 +43,7 @@ export default function Layout() {
             <Stack
               screenOptions={{
                 headerLeft: ({ canGoBack }) => <HeaderLeft canGoBack={canGoBack} />,
-                headerTitleStyle: { fontSize: 24, fontWeight: '800', color: C.primary },
+                headerTitleStyle: { fontSize: 20, fontWeight: '800', color: C.primary },
                 headerStyle: { backgroundColor: C.bg },
                 headerShadowVisible: false,
               }}

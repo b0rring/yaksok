@@ -4,22 +4,28 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
-import DoseRing from '../../components/DoseRing';
-import PlanList from '../../components/PlanList';
-import SpeakButton from '../../components/SpeakButton';
+import Chip from '../../components/Chip';
+import ChatFab from '../../components/ChatFab';
+import WeekStrip from '../../components/WeekStrip';
 import Icon from '../../components/Icon';
+import SlotIcon from '../../components/SlotIcon';
 import { getHealth } from '../../lib/api';
-import { timeText, today } from '../../lib/store';
-import { C, S } from '../../lib/theme';
+import { useCalendarData } from '../../lib/calendarData';
+import { addDays, planTitle, timeText, today } from '../../lib/store';
+import { C, CARD, R, S } from '../../lib/theme';
 import { useTodayMeds } from '../../lib/useTodayMeds';
 
-const diffText = (min: number) => {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h && m ? `${h}시간 ${m}분` : h ? `${h}시간` : `${m}분`;
-};
+// 지금 시각이 아침·점심·저녁 중 어디인지 (시간대 이름)
+// 상태별 카드 바탕(테두리 없음): 지금 먹을 시간대는 진한 푸른 바탕, 아직 시간 전은 옅은 회청색 바탕, 다 먹은 건 회녹색 바탕+체크 아이콘
+const SLOT_STYLE = {
+  now: { backgroundColor: C.mist },
+  later: { backgroundColor: C.soft },
+  done: { backgroundColor: '#E4EBE6' },
+} as const;
+const SLOT_CHIP = { now: C.orange, later: '#7B879A', done: '#6F8F7B' } as const;
+const period = (h: number) => (h < 5 ? '새벽' : h < 11 ? '아침' : h < 17 ? '점심' : h < 21 ? '저녁' : '밤');
 
-// 홈 = "오늘의 약": 하루 시계 위에 아침·점심·저녁 약을 놓고, 다음 약까지 남은 시간과 "지금 먹었어요" 버튼 하나.
+// 홈 = 오늘의 약 체크리스트: 지금 시각과 "지금 뭘 해야 하는지" 한 줄, 그 아래 시간대별로 "무슨 병 약"을 체크한다.
 export default function Home() {
   const router = useRouter();
   const [online, setOnline] = useState<boolean | null>(null);
@@ -37,7 +43,8 @@ export default function Home() {
     }, []),
   );
 
-  const { all, slots, eat, reload } = useTodayMeds();
+  const { slots, eat, eatAll } = useTodayMeds();
+  const [openItem, setOpenItem] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -47,76 +54,188 @@ export default function Home() {
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const at = (s: { hour: number; minute: number }) => s.hour * 60 + s.minute;
   const pending = slots.filter((s) => !s.done);
-  // 시간이 지났는데 아직 안 먹은 약이 있으면 그것부터, 없으면 가장 가까운 다음 약
-  const next = pending.find((s) => at(s) <= nowMin) ?? pending[0];
-  const late = !!next && at(next) <= nowMin;
+  // 시간대 상태: now = 시간이 됐는데 아직 안 먹음(강조), later = 아직 시간 전(색을 죽임), done = 다 먹음(다른 색으로 죽임)
+  const stateOf = (s: (typeof slots)[number]) => (s.done ? 'done' : at(s) <= nowMin ? 'now' : 'later');
+  // 순서: 지금 시간대(시각이 지난 것 중 가장 늦은 시간대)는 다 먹었어도 맨 위, 나머지는 아침·점심·저녁 시간 순
+  const curId = slots.filter((s) => at(s) <= nowMin).sort((a, b) => at(b) - at(a))[0]?.id;
+  const ordered = [...slots].sort((a, b) => (b.id === curId ? 1 : 0) - (a.id === curId ? 1 : 0) || at(a) - at(b));
+  const total = slots.reduce((n, s) => n + s.items.length, 0);
+  const doneN = slots.reduce((n, s) => n + s.items.filter((i) => i.done).length, 0);
+  const summary = !slots.length ? '오늘은 먹을 약이 없어요' : !pending.length ? '오늘 약을 다 드셨어요' : `오늘 ${total}개 중 ${doneN}개 먹었어요`;
 
-  const ring = !slots.length
-    ? { title: '오늘은', big: '약이 없어요' }
-    : !next
-      ? { title: '오늘 약을', big: '다 드셨어요', small: '잘하셨어요' }
-      : late
-        ? { title: '드실 시간이에요', big: `${next.label} 약`, small: timeText(next) }
-        : { title: '다음 약까지', big: diffText(at(next) - nowMin), small: `${next.label} ${timeText(next)}` };
+  // 아래 간단 캘린더: 이번 주(일~토)
+  const { dots } = useCalendarData();
+  const t = today();
+  const weekStart = addDays(t, -new Date(`${t}T00:00:00`).getDay());
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const planned = weekDays.filter((x) => x <= t && dots[x]?.includes('plan'));
+  const took = planned.filter((x) => dots[x]?.includes('taken'));
 
-  const speak = !slots.length
-    ? '아직 정해진 약이 없어요.'
-    : `오늘 드실 약이에요. ${slots.map((s) => `${s.label} 약은 ${s.drugs.join(', ')}.`).join(' ')}`;
   const [y, m, d] = today().split('-').map(Number);
   const dateText = `${m}월 ${d}일 ${'일월화수목금토'[new Date(y, m - 1, d).getDay()]}`;
+  // 오전·오후 대신 시간대 이름(새벽·아침·점심·저녁·밤)을 시각 앞에 붙인다: 날짜와 시각이 한 덩어리
+  const clock = `${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.wrap} showsVerticalScrollIndicator={false}>
         <View style={styles.top}>
-          <Text style={styles.head}>오늘의 약</Text>
+          <Text style={styles.headTitle}>오늘의 약</Text>
           <View style={styles.right}>
-            <Text style={styles.date}>{dateText}</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="설정"
               onPress={() => router.push('/more')}
               style={({ pressed }) => [styles.gear, pressed && { opacity: 0.6 }]}
             >
-              <Icon name="settings" size={24} color={C.sub} />
+              <Icon name="settings" size={20} color={C.sub} />
             </Pressable>
           </View>
         </View>
 
-        <DoseRing
-          slots={slots.map(({ id, label, hour, minute, done }) => ({ id, label, hour, minute, done }))}
-          now={now}
-          onNode={eat}
-          {...ring}
-        />
+        <View style={styles.status}>
+          <Chip small text={`${dateText} ${period(now.getHours())} ${clock}`} />
+          <Text style={styles.statusText}>{summary}</Text>
+          {total > 0 && (
+            <View style={styles.bar}>
+              <View style={[styles.barFill, { width: `${(doneN / total) * 100}%` }]} />
+            </View>
+          )}
+        </View>
 
-        {!!next && <Text style={styles.drugs} numberOfLines={2}>{next.drugs.join(' · ')}</Text>}
+        {!slots.length && <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />}
 
-        {next ? (
-          <BigButton label="지금 먹었어요" onPress={() => eat(next.id)} />
-        ) : !slots.length ? (
-          <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />
-        ) : null}
+        {ordered.map((s) => {
+          const st = stateOf(s);
+          const now = st === 'now';
+          const left = s.items.filter((i) => !i.done).length;
+          return (
+            <View key={s.id} style={[styles.slot, SLOT_STYLE[st]]}>
+              <View style={styles.slotHead}>
+                <View style={styles.slotLeft}>
+                  <View style={[styles.tag, { backgroundColor: SLOT_CHIP[st] }]}>
+                    <View style={styles.tagIcon}>
+                      {st === 'done' ? <Icon name="check" size={20} color={SLOT_CHIP.done} stroke={3.5} /> : <SlotIcon slot={s.id} size={26} />}
+                    </View>
+                    <Text style={styles.tagText}>{s.label}</Text>
+                  </View>
+                  <Text numberOfLines={1} style={styles.slotTime}>{timeText(s)}</Text>
+                </View>
+                <View style={styles.slotRight}>
+                  {st !== 'later' && (
+                    <Text numberOfLines={1} style={[styles.chip, st === 'done' ? styles.chipDone : styles.chipLate]}>
+                      {st === 'done' ? '먹었어요' : '지금 드세요'}
+                    </Text>
+                  )}
+                </View>
+              </View>
 
-        <BigButton label="약에 대해 물어보기" variant="secondary" small onPress={() => router.push('/chat')} />
+              {s.items.map(({ plan, done }) => {
+                  const k = `${s.id}:${plan.id}`;
+                  return (
+                    <View key={plan.id} style={styles.item}>
+                      <View style={styles.itemRow}>
+                        <Pressable
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: done }}
+                          accessibilityLabel={`${s.label} ${planTitle(plan)}`}
+                          onPress={() => eat(s.id, plan, done)}
+                          style={({ pressed }) => [styles.check, pressed && { opacity: 0.8 }]}
+                        >
+                          <View style={[styles.box, done && styles.boxDone, now && !done && { borderColor: C.orange }]}>
+                            {done && <Icon name="check" size={26} color="#fff" stroke={3.5} />}
+                          </View>
+                          <View style={{ flex: 1, gap: 2 }}>
+                            <Text style={[styles.itemName, done && { color: C.sub }]}>{planTitle(plan)}</Text>
+                            <Text style={styles.itemSub}>약 {plan.drugs.length}가지</Text>
+                            {plan.guess && <Text style={styles.guess}>병명은 AI 짐작</Text>}
+                          </View>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={openItem[k] ? '약 목록 접기' : `약 ${plan.drugs.length}가지 보기`}
+                          onPress={() => setOpenItem((o) => ({ ...o, [k]: !o[k] }))}
+                          style={styles.expand}
+                        >
+                          <Icon name={openItem[k] ? 'up' : 'down'} size={24} color={C.primary} />
+                        </Pressable>
+                      </View>
+                      {!!openItem[k] &&
+                        plan.drugs.map((name) => {
+                          const effect = plan.info?.find((d) => d.name === name)?.effect;
+                          return (
+                            <View key={name} style={styles.drugRow}>
+                              <Text style={styles.drugName}>{name}</Text>
+                              {!!effect && <Text style={styles.itemSub}>{effect}</Text>}
+                            </View>
+                          );
+                        })}
+                    </View>
+                  );
+                })}
+              {left > 1 && <BigButton label={`${s.label} 약 모두 먹었어요`} small onPress={() => eatAll(s.id)} />}
+            </View>
+          );
+        })}
 
-        <PlanList all={all} reload={reload} />
+        <Pressable accessibilityRole="button" accessibilityLabel="캘린더 보기" onPress={() => router.navigate('/calendar')} style={styles.cal}>
+          <View style={styles.calHead}>
+            <Text style={styles.slotName}>이번 주</Text>
+            <Text style={styles.calMore}>캘린더 ›</Text>
+          </View>
+          <WeekStrip days={weekDays} dots={dots} sel={t} onSelect={() => router.navigate('/calendar')} />
+          {!!planned.length && <Text style={styles.count}>이번 주 {took.length}/{planned.length}일 복용했어요</Text>}
+        </Pressable>
 
         {online === false && <Text style={styles.offline}>서버에 연결되지 않았어요</Text>}
       </ScrollView>
-      <SpeakButton text={speak} />
+      <ChatFab />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 120, gap: S.gap },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48 },
-  head: { fontSize: 24, fontWeight: '800', color: C.text },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  date: { fontSize: 20, color: C.sub },
-  gear: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  drugs: { fontSize: 22, textAlign: 'center', color: C.sub, lineHeight: 30 },
-  offline: { fontSize: 18, textAlign: 'center', color: C.red },
+  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 7, paddingBottom: 102, gap: S.section },
+  top: { marginBottom: -S.gap, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 41 },
+  headTitle: { flexShrink: 0, fontSize: 20, fontWeight: '800', color: C.text },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  date: { fontSize: 17, color: C.sub },
+  gear: { width: 41, height: 41, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  status: { ...CARD, padding: S.pad, gap: S.in },
+  nowRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  now: { fontSize: 19, fontWeight: '700', color: C.sub },
+  statusText: { fontSize: 26, lineHeight: 32, fontWeight: '800', color: C.text },
+  bar: { height: 12, borderRadius: 6, backgroundColor: C.soft, overflow: 'hidden' },
+  barFill: { height: 12, borderRadius: 6, backgroundColor: C.primary },
+  count: { fontSize: 17, color: C.sub },
+  cal: { ...CARD, padding: S.pad, gap: S.in },
+  calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  calMore: { fontSize: 17, fontWeight: '800', color: C.primary },
+  // 시간대 하나 = 연한 큰 카드 안에 머리줄(아이콘·이름·시각·상태)과 약 묶음 카드들
+  slot: { gap: S.gap, backgroundColor: C.soft, borderRadius: R.card, padding: S.item },
+  // 시간대 이름표: 색을 꽉 채운 둥근 상자 안에 둥근 흰 원(그림)과 이름
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 26, padding: 5, paddingRight: 14 },
+  tagIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  tagText: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  slotHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 7 },
+  slotLeft: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 },
+  slotTime: { flexShrink: 0, fontSize: 15, color: C.sub },
+  slotName: { fontSize: 20, fontWeight: '800', color: C.text, flexShrink: 1 },
+  chip: { flexShrink: 0, fontSize: 15, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 15, overflow: 'hidden' },
+  chipDone: { backgroundColor: '#6F8F7B', color: '#fff' },
+  chipLate: { backgroundColor: C.orange, color: '#fff' },
+  slotRight: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  item: { ...CARD, padding: S.item, gap: S.in },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  check: { flex: 1, minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  expand: { width: 41, height: 41, borderRadius: 20, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  drugRow: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in, gap: S.tight },
+  drugName: { fontSize: 19, lineHeight: 26, fontWeight: '700', color: C.text },
+  box: { width: 41, height: 41, borderRadius: 12, borderWidth: 3, borderColor: C.mist, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  boxDone: { backgroundColor: C.primary, borderColor: C.primary },
+  itemName: { fontSize: 22, lineHeight: 29, fontWeight: '800', color: C.text },
+  guess: { fontSize: 15, color: C.orange },
+  itemSub: { fontSize: 17, color: C.sub },
+  offline: { fontSize: 15, textAlign: 'center', color: C.red },
 });

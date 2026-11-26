@@ -20,7 +20,14 @@ export default function Scan() {
     router.push({ pathname: '/result', params: { data: JSON.stringify(data), added: added ? '1' : '' } });
 
   const add = async (data: ScanResult) => {
-    await addPlan({ drugs: data.drugs.map((d) => d.name), slots: data.schedule.slots as Slot[], days: data.schedule.days });
+    await addPlan({
+      drugs: data.drugs.map((d) => d.name),
+      slots: data.schedule.slots as Slot[],
+      days: data.schedule.days,
+      condition: data.condition,
+      guess: data.guess,
+      info: data.drugs,
+    });
     if (!(await scheduleSlots(await allActiveSlots()))) ask({ title: '알림을 켜 주세요', message: '설정에서 알림을 허용해 주세요.' });
     goResult(data, true);
   };
@@ -31,7 +38,8 @@ export default function Scan() {
     const when = data.schedule.slots.map(slotLabel).join(', ');
     ask({
       title: '알림과 캘린더에 추가할까요?',
-      message: `${names.join(', ')}\n\n${when} · ${data.schedule.days}일 동안`,
+      message: `${data.condition ? `${data.condition} 약${data.guess ? ' (AI 짐작)' : ''}\n` : ''}${names.join(', ')}\n\n${when}
+${data.schedule.days}일 동안`,
       actions: [
         {
           label: '추가',
@@ -101,7 +109,7 @@ export default function Scan() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: C.bg, padding: 24, justifyContent: 'center', gap: 20 },
-  photo: { width: '100%', height: 160, borderRadius: 20 },
-  text: { fontSize: 28, fontWeight: '800', textAlign: 'center', color: C.text },
+  wrap: { flex: 1, backgroundColor: C.bg, padding: 20, justifyContent: 'center', gap: 17 },
+  photo: { width: '100%', height: 160, borderRadius: 17 },
+  text: { fontSize: 24, fontWeight: '800', textAlign: 'center', color: C.text },
 });

@@ -30,9 +30,9 @@ export default function BigButton({ label, onPress, color = C.primary, variant =
 }
 
 const styles = StyleSheet.create({
-  btn: { minHeight: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  btn: { minHeight: 61, borderRadius: 31, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   secondary: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
-  label: { color: '#fff', fontSize: 26, fontWeight: '800', textAlign: 'center' },
-  small: { minHeight: 64 },
-  smallLabel: { fontSize: 22 },
+  label: { color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center' },
+  small: { minHeight: 54 },
+  smallLabel: { fontSize: 19 },
 });

@@ -60,12 +60,12 @@ export function DialogProvider({ children }: { children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(31,31,31,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  box: { ...CARD, width: '100%', maxWidth: 380, padding: 24, gap: 12 },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, lineHeight: 34 },
-  message: { fontSize: 20, lineHeight: 30, color: C.sub },
-  actions: { gap: 12, marginTop: 12 },
-  btn: { minHeight: 60, borderRadius: R.ctl, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(31,31,31,0.45)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  box: { ...CARD, width: '100%', maxWidth: 380, padding: 20, gap: 10 },
+  title: { fontSize: 22, fontWeight: '800', color: C.text, lineHeight: 29 },
+  message: { fontSize: 17, lineHeight: 26, color: C.sub },
+  actions: { gap: 10, marginTop: 10 },
+  btn: { minHeight: 51, borderRadius: R.ctl, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   secondary: { backgroundColor: C.bg },
-  btnText: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  btnText: { fontSize: 19, fontWeight: '800', color: '#fff' },
 });

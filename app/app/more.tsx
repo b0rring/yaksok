@@ -7,7 +7,7 @@ import { useGuide } from '../components/Guide';
 import Icon from '../components/Icon';
 import { syncNotifications, testIn5s } from '../lib/notify';
 import { RATES, SCALES, useSettings } from '../lib/settings';
-import { SLOTS, Slot, saveTime, timeText } from '../lib/store';
+import { SLOTS, Slot, addPlan, saveTime, timeText } from '../lib/store';
 import { C, CARD, R, S } from '../lib/theme';
 
 // 시간대마다 고를 수 있는 범위(분). 아침·점심·저녁 순서가 뒤바뀌지 않게 한다.
@@ -53,6 +53,18 @@ export default function Settings() {
         <Choice options={RATES} value={rate} onPick={(v) => set({ rate: v })} />
       </Section>
 
+      <BigButton
+        label="시험용 약 넣기"
+        variant="secondary"
+        small
+        onPress={async () => {
+          // 화면 확인용 더미: 아침·점심·저녁 3일. 시간이 지난 시간대는 "지금 먹을 약" 카드로 보인다. 내 약에서 지우면 된다.
+          const info = ['시험약 가', '시험약 나'].map((name) => ({ name, effect: '화면 확인용 가짜 약이에요.', how: '시험용', caution: '시험용', avoid: '시험용', by: 'user' as const }));
+          await addPlan({ drugs: info.map((d) => d.name), slots: ['morning', 'noon', 'evening'], days: 3, condition: '시험', info });
+          syncNotifications().catch(() => {});
+          ask({ title: '시험용 약을 넣었어요', message: '오늘 화면에서 확인하고,\n내 약에서 지울 수 있어요.' });
+        }}
+      />
       <BigButton label="사용법 다시 보기" variant="secondary" small onPress={openGuide} />
       <BigButton
         label="알림 시험 (5초 뒤)"
@@ -92,22 +104,22 @@ function Choice<T extends number>({ options, value, onPick }: { options: readonl
 function Step({ icon, label, onPress }: { icon: 'minus' | 'plus'; label: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.step, pressed && { opacity: 0.6 }]}>
-      <Icon name={icon} size={28} color={C.primary} stroke={3} />
+      <Icon name={icon} size={24} color={C.primary} stroke={3} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: S.page, paddingBottom: 40, gap: S.gap },
-  card: { ...CARD, padding: S.pad, gap: 14 },
-  title: { fontSize: 24, fontWeight: '800', color: C.text },
-  sample: { fontSize: 20, color: C.sub, textAlign: 'center' },
-  choice: { flexDirection: 'row', gap: 8 },
-  opt: { flex: 1, minHeight: 60, borderRadius: R.ctl, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  wrap: { padding: S.page, paddingBottom: 34, gap: S.section },
+  card: { ...CARD, padding: S.pad, gap: S.in },
+  title: { fontSize: 20, fontWeight: '800', color: C.text },
+  sample: { fontSize: 17, color: C.sub, textAlign: 'center' },
+  choice: { flexDirection: 'row', gap: 7 },
+  opt: { flex: 1, minHeight: 51, borderRadius: R.ctl, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   optOn: { backgroundColor: C.primary },
-  optText: { fontSize: 22, fontWeight: '800', color: C.text },
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  slot: { width: 48, fontSize: 24, fontWeight: '800', color: C.text },
-  time: { flex: 1, fontSize: 24, fontWeight: '800', color: C.text, textAlign: 'center' },
-  step: { width: 52, height: 52, borderRadius: 26, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+  optText: { fontSize: 19, fontWeight: '800', color: C.text },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  slot: { width: 41, fontSize: 20, fontWeight: '800', color: C.text },
+  time: { flex: 1, fontSize: 20, fontWeight: '800', color: C.text, textAlign: 'center' },
+  step: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
 });

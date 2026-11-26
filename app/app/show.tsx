@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../components/AppText';
 import BigButton from '../components/BigButton';
+import Chip from '../components/Chip';
 import SpeakButton from '../components/SpeakButton';
 import { Visit, getVisits } from '../lib/store';
 import { C, CARD, S } from '../lib/theme';
@@ -23,7 +24,7 @@ export default function Show() {
   if (!loaded) return null;
   if (!v)
     return (
-      <View style={[styles.outer, { flex: 1, justifyContent: 'center', gap: 16, backgroundColor: C.bg }]}>
+      <View style={[styles.outer, { flex: 1, justifyContent: 'center', gap: 14, backgroundColor: C.bg }]}>
         <Text style={styles.big}>진료 기록을 찾지 못했어요</Text>
         <BigButton label="홈으로" onPress={() => router.navigate('/')} />
       </View>
@@ -34,7 +35,7 @@ export default function Show() {
     <ScrollView contentContainerStyle={styles.outer}>
       <View style={styles.wrap}>
       {!!saved && <Text style={styles.saved}>✓ 캘린더에 저장했어요</Text>}
-      <Text style={styles.date}>{v.date}</Text>
+      <Chip big text={v.date.replace(/^(\d+)-0?(\d+)-0?(\d+)$/, '$1년 $2월 $3일')} />
       <Text style={styles.hospital}>{v.hospital}</Text>
       <Text style={styles.label}>병원에 간 이유</Text>
       <Text style={styles.big}>{v.reason}</Text>
@@ -47,7 +48,7 @@ export default function Show() {
         </>
       )}
       </View>
-      <View style={{ marginTop: 16 }}>
+      <View style={{ marginTop: S.gap }}>
         <BigButton label="홈으로" variant="secondary" small onPress={() => router.navigate('/')} />
       </View>
     </ScrollView>
@@ -57,12 +58,12 @@ export default function Show() {
 }
 
 const styles = StyleSheet.create({
-  outer: { padding: S.page, paddingBottom: 120 },
-  wrap: { ...CARD, padding: 24, gap: 14 },
-  saved: { fontSize: 24, fontWeight: '800', color: C.green },
-  date: { fontSize: 40, fontWeight: '800', color: C.text },
-  hospital: { fontSize: 44, fontWeight: '800', color: C.text },
-  label: { fontSize: 26, fontWeight: '800', color: C.green, marginTop: 12 },
-  big: { fontSize: 36, lineHeight: 52, fontWeight: '700', color: C.text },
-  small: { fontSize: 22, lineHeight: 32, color: C.sub },
+  outer: { padding: S.page, paddingBottom: 102 },
+  wrap: { ...CARD, padding: S.pad, gap: S.in },
+  saved: { fontSize: 20, fontWeight: '800', color: C.green },
+  date: { fontSize: 34, fontWeight: '800', color: C.text },
+  hospital: { fontSize: 37, fontWeight: '800', color: C.text },
+  label: { fontSize: 22, fontWeight: '800', color: C.green, marginTop: 10 },
+  big: { fontSize: 31, lineHeight: 44, fontWeight: '700', color: C.text },
+  small: { fontSize: 19, lineHeight: 27, color: C.sub },
 });

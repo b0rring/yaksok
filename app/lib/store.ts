@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Drug } from './api';
 
 export type Slot = 'morning' | 'noon' | 'evening';
 export const SLOTS: { id: Slot; label: string; hour: number; minute: number }[] = [
@@ -29,7 +30,20 @@ export const addDays = (date: string, n: number) => {
 
 // ── 복약 계획: 약 봉투 한 장 = 계획 하나 ──
 // stopped: 복용을 중지한 날짜. 중지한 날부터는 먹을 날이 아니다 (이전 기록은 남는다)
-export type Plan = { id: string; drugs: string[]; slots: Slot[]; start: string; days: number; stopped?: string };
+// condition: 무슨 병·증상 때문에 처방받은 약인지 (봉투 한 장 = 한 묶음). guess: 봉투에 없어서 AI가 약으로 추정한 것
+// info: 약마다 쉬운 설명·식약처 공식 설명 (내 약 탭에서 보여 준다)
+export type Plan = {
+  id: string;
+  drugs: string[];
+  slots: Slot[];
+  start: string;
+  days: number;
+  stopped?: string;
+  condition?: string;
+  guess?: boolean;
+  info?: Drug[];
+};
+export const planTitle = (p: Plan) => (p.condition ? `${p.condition} 약` : '처방받은 약');
 export const planEnd = (p: Plan) => (p.stopped ? addDays(p.stopped, -1) : addDays(p.start, p.days - 1));
 
 export const getPlans = () => read<Plan[]>('plans', []);
@@ -42,24 +56,30 @@ const key = (drugs: string[]) => [...drugs].sort().join('|');
 export const hasDuplicate = async (drugs: string[]) =>
   (await activePlans()).some((p) => key(p.drugs) === key(drugs));
 
-export async function addPlan(p: { drugs: string[]; slots: Slot[]; days: number }) {
+export async function addPlan(p: Omit<Plan, 'id' | 'start' | 'stopped'>) {
   await write('plans', [...(await getPlans()), { ...p, id: String(Date.now()), start: today() }]);
 }
 // 복용 중지(기록은 남김) / 삭제 / 같은 약으로 다시 등록
 export const stopPlan = async (id: string) =>
   write('plans', (await getPlans()).map((p) => (p.id === id ? { ...p, stopped: today() } : p)));
+export const updatePlan = async (id: string, patch: Partial<Plan>) =>
+  write('plans', (await getPlans()).map((p) => (p.id === id ? { ...p, ...patch } : p)));
 export const deletePlan = async (id: string) => write('plans', (await getPlans()).filter((p) => p.id !== id));
 
 // 알림은 진행 중인 계획의 시간대를 모두 합쳐서 예약
 export const allActiveSlots = async () => [...new Set((await activePlans()).flatMap((p) => p.slots))];
 
 // ── 복용 기록 ──
-type Log = { date: string; slot: Slot };
+// 기록 하나 = 그 날·시간대에 이 계획(약 묶음)을 먹었다. plan이 없는 옛 기록은 그 시간대 전체로 본다.
+export type Log = { date: string; slot: Slot; plan?: string };
 export const getLogs = () => read<Log[]>('logs', []);
-export const isTaken = async (slot: Slot) => (await getLogs()).some((l) => l.date === today() && l.slot === slot);
-export const addLog = async (slot: Slot) => write('logs', [...(await getLogs()), { date: today(), slot }]);
-// 오늘 그 시간대의 먹은 기록을 모두 지운다 ("먹었어요" 취소)
-export const removeLog = async (slot: Slot) => write('logs', (await getLogs()).filter((l) => !(l.date === today() && l.slot === slot)));
+export const didTake = (logs: Log[], date: string, slot: string, plan: string) =>
+  logs.some((l) => l.date === date && l.slot === slot && (!l.plan || l.plan === plan));
+export const addLogs = async (slot: Slot, plans: string[]) =>
+  write('logs', [...(await getLogs()), ...plans.map((plan) => ({ date: today(), slot, plan }))]);
+// 오늘 그 시간대에서 이 묶음의 먹은 기록을 지운다 ("먹었어요" 취소)
+export const removeLog = async (slot: Slot, plan: string) =>
+  write('logs', (await getLogs()).filter((l) => !(l.date === today() && l.slot === slot && (!l.plan || l.plan === plan))));
 
 // ── 진료 기록 ──
 export type Visit = {

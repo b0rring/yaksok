@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Text } from '../components/AppText';
 import BigButton from '../components/BigButton';
 import { useDialog } from '../components/Dialog';
+import type { ScanResult } from '../lib/api';
 import { scheduleSlots } from '../lib/notify';
 import { SLOTS, Slot, addPlan, allActiveSlots } from '../lib/store';
 import { C } from '../lib/theme';
@@ -12,14 +13,15 @@ import { C } from '../lib/theme';
 export default function Plan() {
   const router = useRouter();
   const ask = useDialog();
-  const { drugs } = useLocalSearchParams<{ drugs: string }>();
+  const { data } = useLocalSearchParams<{ data: string }>();
   const [picked, setPicked] = useState<Slot[]>([]);
 
   const toggle = (s: Slot) => setPicked((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
 
   const save = async () => {
     if (!picked.length) return ask({ title: '시간을 골라 주세요' });
-    await addPlan({ drugs: JSON.parse(drugs), slots: picked, days: 7 });
+    const r: ScanResult = JSON.parse(data);
+    await addPlan({ drugs: r.drugs.map((d) => d.name), slots: picked, days: 7, condition: r.condition, guess: r.guess, info: r.drugs });
     if (!(await scheduleSlots(await allActiveSlots()))) ask({ title: '알림을 켜 주세요', message: '설정에서 알림을 허용해 주세요.' });
     router.navigate('/');
   };
@@ -41,6 +43,6 @@ export default function Plan() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: C.bg, padding: 24, justifyContent: 'center', gap: 16 },
-  text: { fontSize: 32, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: C.text },
+  wrap: { flex: 1, backgroundColor: C.bg, padding: 20, justifyContent: 'center', gap: 14 },
+  text: { fontSize: 27, fontWeight: '800', textAlign: 'center', marginBottom: 7, color: C.text },
 });

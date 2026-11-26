@@ -85,11 +85,11 @@ export default function MonthGrid({ year, month, dots, todayStr, selected, onSel
 const styles = StyleSheet.create({
   row: { flexDirection: 'row' },
   cell: { flex: 1, alignItems: 'center', paddingVertical: 2 },
-  week: { fontSize: 18, fontWeight: '700', color: C.sub, lineHeight: 32 },
-  circle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  today: { borderWidth: 2, borderColor: C.primary },
-  sel: { backgroundColor: C.primary },
-  day: { fontSize: 20, fontWeight: '700', color: C.text, includeFontPadding: false },
-  dots: { height: 8, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  week: { fontSize: 15, fontWeight: '700', color: C.sub, lineHeight: 27 },
+  circle: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg, borderWidth: 1.5, borderColor: C.line },
+  today: { borderColor: C.primary },
+  sel: { backgroundColor: C.primary, borderColor: C.primary },
+  day: { fontSize: 17, fontWeight: '700', color: C.text, includeFontPadding: false },
+  dots: { height: 7, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  dot: { width: 5, height: 5, borderRadius: 3 },
 });

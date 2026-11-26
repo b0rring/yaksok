@@ -7,8 +7,8 @@ import { askChat } from '../lib/api';
 import { C, CARD, R, S } from '../lib/theme';
 import { useTodayMeds } from '../lib/useTodayMeds';
 
-type Msg = { role: 'user' | 'bot'; text: string; sources?: string[]; demo?: boolean };
-const HELLO: Msg = { role: 'bot', text: '약에 대해 궁금한 것을 물어보세요.\n식약처 공식 정보로 쉽게 알려 드려요.' };
+type Msg = { role: 'user' | 'bot'; text: string; sources?: string[]; demo?: boolean; ai?: boolean };
+const HELLO: Msg = { role: 'bot', text: '약에 대해 궁금한 것을 물어보세요.\n식약처 공식 정보로 쉽게 알려 드려요.\n공식 정보에 없으면 AI 답이라고 표시해요.' };
 const ASKS = ['이 약은 어디에 쓰나요?', '술을 마셔도 되나요?', '부작용이 있나요?', '같이 먹으면 안 되는 약이 있나요?'];
 
 // 약 물어보기: 등록한 약을 바탕으로, 식약처 e약은요 공식 정보 안에서만 답한다. 답은 "듣기"로 읽어 준다.
@@ -28,7 +28,7 @@ export default function Chat() {
     setBusy(true);
     try {
       const r = await askChat(q, drugs);
-      setMsgs((m) => [...m, { role: 'bot', text: r.answer, sources: r.sources, demo: r.demo }]);
+      setMsgs((m) => [...m, { role: 'bot', text: r.answer, sources: r.sources, demo: r.demo, ai: r.ai }]);
     } catch {
       setMsgs((m) => [...m, { role: 'bot', text: '답을 가져오지 못했어요.\n잠시 뒤에 다시 물어봐 주세요.' }]);
     } finally {
@@ -57,6 +57,7 @@ export default function Chat() {
               {!!m.sources?.length && (
                 <Text style={styles.source}>출처: 식약처 e약은요{m.demo ? ' (시연용 예시)' : ''}</Text>
               )}
+              {m.ai && <Text style={styles.aiTag}>식약처 공식 정보가 아니라 AI가 답한 내용이에요. 틀릴 수 있으니 의사·약사에게 꼭 확인하세요.</Text>}
               {i > 0 && <SpeakButton inline text={m.text} />}
             </View>
           ),
@@ -93,17 +94,18 @@ export default function Chat() {
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: C.bg },
-  list: { padding: S.page, paddingBottom: 24, gap: S.gap },
-  note: { fontSize: 18, lineHeight: 26, color: C.sub, textAlign: 'center' },
-  me: { alignSelf: 'flex-end', maxWidth: '85%', backgroundColor: C.primary, borderRadius: R.card, padding: 16 },
-  meText: { fontSize: 22, lineHeight: 30, color: '#fff', fontWeight: '700' },
-  bot: { ...CARD, alignSelf: 'flex-start', maxWidth: '92%', padding: 18, gap: 12 },
-  botText: { fontSize: 22, lineHeight: 32, color: C.text },
-  source: { fontSize: 18, color: C.sub },
-  busy: { fontSize: 20, color: C.sub },
-  asks: { gap: 10, marginTop: 4 },
-  ask: { minHeight: 60, borderRadius: R.ctl, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, justifyContent: 'center', paddingHorizontal: 18 },
-  askText: { fontSize: 22, fontWeight: '800', color: C.primary },
-  bar: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, paddingBottom: 16, backgroundColor: C.card },
-  input: { flex: 1, minWidth: 0, minHeight: 64, borderRadius: 32, backgroundColor: C.bg, paddingHorizontal: 20, fontSize: 22, color: C.text },
+  list: { padding: S.page, paddingBottom: 20, gap: S.gap },
+  note: { fontSize: 15, lineHeight: 22, color: C.sub, textAlign: 'center' },
+  me: { alignSelf: 'flex-end', maxWidth: '85%', backgroundColor: C.primary, borderRadius: R.card, padding: 14 },
+  meText: { fontSize: 19, lineHeight: 26, color: '#fff', fontWeight: '700' },
+  bot: { ...CARD, alignSelf: 'flex-start', maxWidth: '92%', padding: S.item, gap: S.in },
+  botText: { fontSize: 19, lineHeight: 27, color: C.text },
+  source: { fontSize: 15, color: C.sub },
+  aiTag: { fontSize: 16, lineHeight: 22, fontWeight: '700', color: C.orange },
+  busy: { fontSize: 17, color: C.sub },
+  asks: { gap: 8, marginTop: 4 },
+  ask: { minHeight: 51, borderRadius: R.ctl, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, justifyContent: 'center', paddingHorizontal: 15 },
+  askText: { fontSize: 19, fontWeight: '800', color: C.primary },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, paddingBottom: 14, backgroundColor: C.card },
+  input: { flex: 1, minWidth: 0, minHeight: 54, borderRadius: 27, backgroundColor: C.bg, paddingHorizontal: 17, fontSize: 19, color: C.text },
 });
