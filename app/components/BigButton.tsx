@@ -10,8 +10,8 @@ type Props = {
   small?: boolean;
 };
 
-// 한 화면에 으뜸(채운) 버튼은 하나, 나머지는 secondary.
-export default function BigButton({ label, onPress, color = C.primary, variant = 'primary', small }: Props) {
+// 한 화면에 으뜸(채운) 버튼은 하나, 나머지는 secondary. 크기는 모든 버튼이 같다(높이 54·글자 20). small은 옛 호출 호환용으로 무시한다.
+export default function BigButton({ label, onPress, color = C.primary, variant = 'primary' }: Props) {
   const secondary = variant === 'secondary';
   return (
     <Pressable
@@ -19,20 +19,17 @@ export default function BigButton({ label, onPress, color = C.primary, variant =
       onPress={onPress}
       style={({ pressed }) => [
         styles.btn,
-        small && styles.small,
         secondary ? styles.secondary : { backgroundColor: color },
         { transform: [{ scale: pressed ? 0.98 : 1 }], opacity: pressed ? 0.88 : 1 },
       ]}
     >
-      <Text style={[styles.label, small && styles.smallLabel, secondary && { color: C.text }]}>{label}</Text>
+      <Text style={[styles.label, secondary && { color: C.text }]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  btn: { minHeight: 61, borderRadius: 31, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  btn: { minHeight: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   secondary: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
-  label: { color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  small: { minHeight: 54 },
-  smallLabel: { fontSize: 19 },
+  label: { color: '#fff', fontSize: 20, fontWeight: '800', textAlign: 'center' },
 });

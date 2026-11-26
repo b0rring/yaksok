@@ -6,6 +6,8 @@ import { DialogProvider } from '../components/Dialog';
 import { GuideProvider } from '../components/Guide';
 import HeaderLeft from '../components/HeaderLeft';
 import Intro from '../components/Intro';
+import JobBanner from '../components/JobBanner';
+import { JobsProvider } from '../lib/jobs';
 import { syncNotifications } from '../lib/notify';
 import { SettingsProvider } from '../lib/settings';
 import { C } from '../lib/theme';
@@ -39,6 +41,7 @@ export default function Layout() {
     <SettingsProvider>
       <DialogProvider>
         <GuideProvider>
+          <JobsProvider>
           <View style={{ flex: 1 }}>
             <Stack
               screenOptions={{
@@ -53,9 +56,11 @@ export default function Layout() {
                 <Stack.Screen key={name} name={name} options={{ title }} />
               ))}
             </Stack>
+            <JobBanner />
             <Intro />
             <Boot />
           </View>
+          </JobsProvider>
         </GuideProvider>
       </DialogProvider>
     </SettingsProvider>

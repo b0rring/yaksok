@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   card: { ...CARD, padding: S.item, gap: S.tight },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 7 },
   title: { flex: 1, fontSize: 20, lineHeight: 26, fontWeight: '800', color: C.text },
-  pen: { width: 37, height: 37, borderRadius: 19, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  pen: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   guess: { fontSize: 15, color: C.orange },
   sub: { fontSize: 17, color: C.sub },
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   drugName: { fontSize: 18, lineHeight: 24, fontWeight: '700', color: C.text, flexShrink: 1 },
   more: { fontSize: 17, fontWeight: '800', color: C.primary },
   actions: { flexDirection: 'row', gap: S.in, marginTop: S.in },
-  action: { flex: 1, minHeight: 44, borderRadius: 22, borderWidth: 1.5, borderColor: C.mist, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+  action: { flex: 1, minHeight: 54, borderRadius: 27, borderWidth: 1.5, borderColor: C.mist, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
   actionMain: { backgroundColor: C.primary, borderColor: C.primary },
-  actionText: { fontSize: 17, fontWeight: '800', color: C.text },
+  actionText: { fontSize: 20, fontWeight: '800', color: C.text },
 });

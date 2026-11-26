@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Icon, { IconName } from '../../components/Icon';
 import { C } from '../../lib/theme';
 
-// 아래쪽 탭: 오늘 / 캘린더 / 내 약 / (가운데 카메라 = 약 찍기) / 병원 / 기록(진료 녹음·기록 목록)
+// 아래쪽 탭: 홈 / 캘린더 / 내 약 / (가운데 카메라 = 약 찍기) / 병원 / 기록(진료 녹음·기록 목록)
 // header: 탭 자체 제목 줄을 보일 화면. 나머지는 화면 안에 제목이 있다.
 const TABS: { name: string; label: string; icon: IconName; header?: string }[] = [
-  { name: 'index', label: '오늘', icon: 'home' },
+  { name: 'index', label: '홈', icon: 'home' },
   { name: 'calendar', label: '캘린더', icon: 'calendar' },
   { name: 'drugs', label: '내 약', icon: 'pill' },
   { name: 'scan', label: '약 찍기', icon: 'camera', header: '약 찍기' },

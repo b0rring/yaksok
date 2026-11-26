@@ -6,12 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
 import Chip from '../../components/Chip';
 import ChatFab from '../../components/ChatFab';
-import WeekStrip from '../../components/WeekStrip';
+import CalendarView from '../../components/CalendarView';
 import Icon from '../../components/Icon';
 import SlotIcon from '../../components/SlotIcon';
 import { getHealth } from '../../lib/api';
-import { useCalendarData } from '../../lib/calendarData';
-import { addDays, planTitle, timeText, today } from '../../lib/store';
+import { planTitle, timeText, today } from '../../lib/store';
 import { C, CARD, R, S } from '../../lib/theme';
 import { useTodayMeds } from '../../lib/useTodayMeds';
 
@@ -63,13 +62,6 @@ export default function Home() {
   const doneN = slots.reduce((n, s) => n + s.items.filter((i) => i.done).length, 0);
   const summary = !slots.length ? '오늘은 먹을 약이 없어요' : !pending.length ? '오늘 약을 다 드셨어요' : `오늘 ${total}개 중 ${doneN}개 먹었어요`;
 
-  // 아래 간단 캘린더: 이번 주(일~토)
-  const { dots } = useCalendarData();
-  const t = today();
-  const weekStart = addDays(t, -new Date(`${t}T00:00:00`).getDay());
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const planned = weekDays.filter((x) => x <= t && dots[x]?.includes('plan'));
-  const took = planned.filter((x) => dots[x]?.includes('taken'));
 
   const [y, m, d] = today().split('-').map(Number);
   const dateText = `${m}월 ${d}일 ${'일월화수목금토'[new Date(y, m - 1, d).getDay()]}`;
@@ -105,6 +97,14 @@ export default function Home() {
 
         {!slots.length && <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />}
 
+        {slots.length > 0 && (
+          <View style={styles.part}>
+            <View style={styles.band}>
+              <View style={styles.rule} />
+              <Icon name="pill" size={22} color={C.primary} />
+              <Text style={styles.bandText}>오늘 먹을 약</Text>
+              <View style={styles.rule} />
+            </View>
         {ordered.map((s) => {
           const st = stateOf(s);
           const now = st === 'now';
@@ -177,15 +177,20 @@ export default function Home() {
             </View>
           );
         })}
-
-        <Pressable accessibilityRole="button" accessibilityLabel="캘린더 보기" onPress={() => router.navigate('/calendar')} style={styles.cal}>
-          <View style={styles.calHead}>
-            <Text style={styles.slotName}>이번 주</Text>
-            <Text style={styles.calMore}>캘린더 ›</Text>
           </View>
-          <WeekStrip days={weekDays} dots={dots} sel={t} onSelect={() => router.navigate('/calendar')} />
-          {!!planned.length && <Text style={styles.count}>이번 주 {took.length}/{planned.length}일 복용했어요</Text>}
-        </Pressable>
+        )}
+
+        <View style={styles.calPart}>
+          <View style={styles.band}>
+            <View style={styles.rule} />
+            <Icon name="calendar" size={22} color={C.primary} />
+            <Text style={styles.bandText}>캘린더</Text>
+            <View style={styles.rule} />
+          </View>
+          <View style={{ gap: S.section }}>
+            <CalendarView mode="week" />
+          </View>
+        </View>
 
         {online === false && <Text style={styles.offline}>서버에 연결되지 않았어요</Text>}
       </ScrollView>
@@ -201,7 +206,7 @@ const styles = StyleSheet.create({
   headTitle: { flexShrink: 0, fontSize: 20, fontWeight: '800', color: C.text },
   right: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   date: { fontSize: 17, color: C.sub },
-  gear: { width: 41, height: 41, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  gear: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   status: { ...CARD, padding: S.pad, gap: S.in },
   nowRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   now: { fontSize: 19, fontWeight: '700', color: C.sub },
@@ -209,9 +214,6 @@ const styles = StyleSheet.create({
   bar: { height: 12, borderRadius: 6, backgroundColor: C.soft, overflow: 'hidden' },
   barFill: { height: 12, borderRadius: 6, backgroundColor: C.primary },
   count: { fontSize: 17, color: C.sub },
-  cal: { ...CARD, padding: S.pad, gap: S.in },
-  calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  calMore: { fontSize: 17, fontWeight: '800', color: C.primary },
   // 시간대 하나 = 연한 큰 카드 안에 머리줄(아이콘·이름·시각·상태)과 약 묶음 카드들
   slot: { gap: S.gap, backgroundColor: C.soft, borderRadius: R.card, padding: S.item },
   // 시간대 이름표: 색을 꽉 채운 둥근 상자 안에 둥근 흰 원(그림)과 이름
@@ -229,7 +231,7 @@ const styles = StyleSheet.create({
   item: { ...CARD, padding: S.item, gap: S.in },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   check: { flex: 1, minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  expand: { width: 41, height: 41, borderRadius: 20, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  expand: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   drugRow: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in, gap: S.tight },
   drugName: { fontSize: 19, lineHeight: 26, fontWeight: '700', color: C.text },
   box: { width: 41, height: 41, borderRadius: 12, borderWidth: 3, borderColor: C.mist, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
@@ -237,5 +239,13 @@ const styles = StyleSheet.create({
   itemName: { fontSize: 22, lineHeight: 29, fontWeight: '800', color: C.text },
   guess: { fontSize: 15, color: C.orange },
   itemSub: { fontSize: 17, color: C.sub },
+  // 홈은 두 구역: 오늘 먹을 약(체크리스트) / 캘린더. 구역마다 제목을 달고, 둘 사이는 줄과 넓은 간격으로 나눈다.
+  part: { gap: S.gap },
+  partTitle: { fontSize: 22, fontWeight: '800', color: C.text },
+  calPart: { gap: S.gap, marginTop: S.section },
+  // 구역 제목은 카드가 아니라 "선 — 아이콘·제목 — 선" 구분자: 카드(네모 상자)와 모양이 달라 한눈에 구역이 나뉜다
+  band: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rule: { flex: 1, height: 2, borderRadius: 1, backgroundColor: C.mist },
+  bandText: { fontSize: 20, fontWeight: '800', color: C.primary },
   offline: { fontSize: 15, textAlign: 'center', color: C.red },
 });
