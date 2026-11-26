@@ -5,6 +5,7 @@ from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from accounts import router as accounts_router
 from services.chat import answer
 from services.organize import organize
 from services.scan import scan
@@ -12,6 +13,7 @@ from services.visit import summarize_visit
 
 load_dotenv()
 app = FastAPI(title="약속")
+app.include_router(accounts_router)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
