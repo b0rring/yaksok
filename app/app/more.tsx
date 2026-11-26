@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../components/AppText';
@@ -5,6 +6,7 @@ import BigButton from '../components/BigButton';
 import { useDialog } from '../components/Dialog';
 import { useGuide } from '../components/Guide';
 import Icon from '../components/Icon';
+import { useAuth } from '../lib/auth';
 import { syncNotifications, testIn5s } from '../lib/notify';
 import { RATES, SCALES, useSettings } from '../lib/settings';
 import { SLOTS, Slot, addPlan, saveTime, timeText } from '../lib/store';
@@ -17,6 +19,8 @@ const STEP = 30;
 // 설정: 글씨 크기, 약 드시는 시간, 읽는 속도, 사용법, 알림 시험.
 export default function Settings() {
   const ask = useDialog();
+  const router = useRouter();
+  const { user } = useAuth();
   const openGuide = useGuide();
   const { scale, rate, set } = useSettings();
   const [, bump] = useState(0); // 시간이 바뀌면 화면을 다시 그린다 (SLOTS 값이 바뀜)
@@ -33,6 +37,8 @@ export default function Settings() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={styles.wrap}>
+      <BigButton label={user ? `내 계정 (${user.name})` : '로그인 · 가입'} onPress={() => router.push('/account')} />
+
       <Section title="글씨 크기">
         <Choice options={SCALES} value={scale} onPick={(v) => set({ scale: v })} />
         <Text style={styles.sample}>이 크기로 보여요</Text>
@@ -110,16 +116,16 @@ function Step({ icon, label, onPress }: { icon: 'minus' | 'plus'; label: string;
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: S.page, paddingBottom: 34, gap: S.section },
+  wrap: { padding: S.page, paddingBottom: 36, gap: S.section },
   card: { ...CARD, padding: S.pad, gap: S.in },
   title: { fontSize: 20, fontWeight: '800', color: C.text },
-  sample: { fontSize: 17, color: C.sub, textAlign: 'center' },
-  choice: { flexDirection: 'row', gap: 7 },
-  opt: { flex: 1, minHeight: 51, borderRadius: R.ctl, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  sample: { fontSize: 18, color: C.sub, textAlign: 'center' },
+  choice: { flexDirection: 'row', gap: 8 },
+  opt: { flex: 1, minHeight: 52, borderRadius: R.ctl, backgroundColor: C.soft, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   optOn: { backgroundColor: C.primary },
-  optText: { fontSize: 19, fontWeight: '800', color: C.text },
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  slot: { width: 41, fontSize: 20, fontWeight: '800', color: C.text },
+  optText: { fontSize: 18, fontWeight: '800', color: C.text },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  slot: { width: 40, fontSize: 20, fontWeight: '800', color: C.text },
   time: { flex: 1, fontSize: 20, fontWeight: '800', color: C.text, textAlign: 'center' },
-  step: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+  step: { width: 44, height: 44, borderRadius: 24, backgroundColor: C.soft, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
 });

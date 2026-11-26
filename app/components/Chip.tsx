@@ -12,11 +12,28 @@ export default function Chip({ text, big, small, solid }: { text: string; big?: 
   );
 }
 
+// 같은 덩어리지만 성격이 다른 두 정보(날짜 | 시각)를 한 상자 안에서 세로선으로 나눠 보여 준다.
+export function SplitChip({ parts }: { parts: string[] }) {
+  return (
+    <View style={[styles.box, styles.boxSmall, styles.split]}>
+      {parts.map((t, i) => (
+        <View key={t} style={styles.splitRow}>
+          {i > 0 && <View style={styles.splitLine} />}
+          <Text style={[styles.text, styles.textSmall]}>{t}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  box: { alignSelf: 'flex-start', backgroundColor: C.card, borderWidth: 1.5, borderColor: C.mist, borderRadius: 17, paddingHorizontal: 12, paddingVertical: 5 },
-  boxBig: { borderRadius: 20, paddingHorizontal: 15, paddingVertical: 7 },
+  split: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  splitRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  splitLine: { width: 1.5, height: 16, backgroundColor: C.mist },
+  box: { alignSelf: 'flex-start', backgroundColor: C.card, borderWidth: 1.5, borderColor: C.mist, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5 },
+  boxBig: { borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },
   boxSmall: { paddingHorizontal: 8, paddingVertical: 3 },
-  textSmall: { fontSize: 15 },
-  text: { fontSize: 17, fontWeight: '800', color: C.primary },
+  textSmall: { fontSize: 16 },
+  text: { fontSize: 18, fontWeight: '800', color: C.primary },
   textBig: { fontSize: 20 },
 });

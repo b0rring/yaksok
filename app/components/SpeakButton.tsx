@@ -39,15 +39,15 @@ export default function SpeakButton({ text, inline }: { text: string; inline?: b
 
 const styles = StyleSheet.create({
   // 글 옆에 붙는 작은 "듣기" 버튼 (챗봇 답변)
-  small: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 44, paddingHorizontal: 15, borderRadius: 22, backgroundColor: C.primary },
-  smallText: { fontSize: 17, fontWeight: '800', color: '#fff' },
+  small: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 16, borderRadius: 24, backgroundColor: C.primary },
+  smallText: { fontSize: 18, fontWeight: '800', color: '#fff' },
   fab: {
     position: 'absolute',
     right: 20,
     bottom: 24,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 60,
+    height: 60,
+    borderRadius: 28,
     backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',

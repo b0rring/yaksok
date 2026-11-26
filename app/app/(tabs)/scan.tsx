@@ -3,7 +3,9 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/AppText';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
+import TabTitle from '../../components/TabTitle';
 import { useDialog } from '../../components/Dialog';
 import { useJobs } from '../../lib/jobs';
 import { C } from '../../lib/theme';
@@ -39,17 +41,24 @@ export default function Scan() {
   }, []);
 
   return (
-    <View style={styles.wrap}>
+    <SafeAreaView edges={['top']} style={styles.safe}>
+      <View style={styles.titleBox}>
+        <TabTitle title="약 찍기" />
+      </View>
+      <View style={styles.wrap}>
       <Image source={require('../../assets/main.jpg')} style={styles.photo} />
       <Text style={styles.text}>약 봉투나 약을 찍어 주세요</Text>
       <BigButton label="사진 찍기" onPress={() => run(true)} />
       <BigButton label="앨범에서 고르기" onPress={() => run(false)} variant="secondary" small />
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: C.bg, padding: 20, justifyContent: 'center', gap: 17 },
-  photo: { width: '100%', height: 160, borderRadius: 17 },
-  text: { fontSize: 24, fontWeight: '800', textAlign: 'center', color: C.text },
+  safe: { flex: 1, backgroundColor: C.bg },
+  titleBox: { paddingHorizontal: 20, paddingTop: 8 },
+  wrap: { flex: 1, padding: 20, justifyContent: 'center', gap: 16 },
+  photo: { width: '100%', height: 160, borderRadius: 16 },
+  text: { fontSize: 20, fontWeight: '800', textAlign: 'center', color: C.text },
 });

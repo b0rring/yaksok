@@ -7,6 +7,7 @@ import { Text } from '../../components/AppText';
 import BigButton from '../../components/BigButton';
 import { useDialog } from '../../components/Dialog';
 import Chip from '../../components/Chip';
+import TabTitle from '../../components/TabTitle';
 import Icon from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useJobs } from '../../lib/jobs';
@@ -135,8 +136,9 @@ export default function Record() {
     </View>
   );
   return phase === 'idle' ? (
-    <SafeAreaView edges={[]} style={{ flex: 1, backgroundColor: C.bg }}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <TabTitle title="기록" />
         <View style={styles.startCard}>
           <View style={styles.micCircle}>
             <Icon name="mic" size={34} color={C.primary} />
@@ -157,9 +159,13 @@ export default function Record() {
             style={({ pressed }) => [styles.visit, pressed && { opacity: 0.85 }]}
           >
             <Chip text={v.date.replace(/^\d+-0?(\d+)-0?(\d+)$/, '$1월 $2일')} />
-            <Text style={styles.vHospital}>{v.hospital}</Text>
-            <Text style={styles.vSub} numberOfLines={2}>{v.reason}</Text>
-            <Text style={styles.vMore}>의사에게 보여주기 ›</Text>
+            <View style={styles.vBody}>
+              <Text style={styles.vHospital}>{v.hospital}</Text>
+              <Text style={styles.vSub} numberOfLines={2}>{v.reason}</Text>
+            </View>
+            <View style={styles.vFoot}>
+              <Text style={styles.vMore}>의사에게 보여주기 ›</Text>
+            </View>
           </Pressable>
         ))}
         </View>
@@ -172,19 +178,21 @@ export default function Record() {
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: C.bg, padding: S.page, justifyContent: 'center', gap: S.gap },
-  text: { fontSize: 24, fontWeight: '800', textAlign: 'center', color: C.text },
-  micCircle: { ...CARD, alignSelf: 'center', width: 82, height: 82, borderRadius: 41, alignItems: 'center', justifyContent: 'center' },
-  hint: { fontSize: 17, textAlign: 'center', color: C.sub, marginBottom: 10 },
-  list: { padding: S.page, paddingBottom: 34, gap: S.section },
+  text: { fontSize: 20, fontWeight: '800', textAlign: 'center', color: C.text },
+  micCircle: { ...CARD, alignSelf: 'center', width: 84, height: 84, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
+  hint: { fontSize: 18, textAlign: 'center', color: C.sub, marginBottom: 12 },
+  list: { padding: S.page, paddingBottom: 36, gap: S.section },
   group: { gap: S.gap },
   startCard: { ...CARD, padding: S.pad, gap: S.in },
   section: { fontSize: 22, fontWeight: '800', color: C.text },
-  empty: { fontSize: 19, color: C.sub },
-  visit: { ...CARD, padding: S.item, gap: S.tight },
-  vDate: { fontSize: 17, fontWeight: '700', color: C.sub },
-  vHospital: { fontSize: 22, fontWeight: '800', color: C.text },
-  vSub: { fontSize: 17, lineHeight: 24, color: C.sub },
-  vMore: { fontSize: 17, fontWeight: '800', color: C.primary, marginTop: 7 },
+  empty: { fontSize: 18, color: C.sub },
+  visit: { ...CARD, padding: S.pad, gap: S.gap },
+  vBody: { gap: 8 },
+  vFoot: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in },
+  vDate: { fontSize: 18, fontWeight: '700', color: C.sub },
+  vHospital: { fontSize: 20, fontWeight: '800', color: C.text },
+  vSub: { fontSize: 18, lineHeight: 24, color: C.sub },
+  vMore: { fontSize: 18, fontWeight: '800', color: C.primary },
   dot: { fontSize: 54, textAlign: 'center', color: C.red },
-  time: { fontSize: 48, fontWeight: '800', textAlign: 'center', color: C.text, marginBottom: 14 },
+  time: { fontSize: 48, fontWeight: '800', textAlign: 'center', color: C.text, marginBottom: 16 },
 });

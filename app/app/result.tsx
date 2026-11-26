@@ -58,8 +58,8 @@ export default function Result() {
 const styles = StyleSheet.create({
   wrap: { padding: S.page, paddingBottom: 102, gap: S.gap },
   added: { fontSize: 20, fontWeight: '800', color: C.green, textAlign: 'center' },
-  guessNote: { fontSize: 15, color: C.orange, textAlign: 'center', marginTop: -S.in },
+  guessNote: { fontSize: 16, color: C.orange, textAlign: 'center', marginTop: -S.in },
   cond: { fontSize: 22, fontWeight: '800', color: C.text, textAlign: 'center' },
   card: { ...CARD, padding: S.pad },
-  source: { fontSize: 15, color: C.sub, textAlign: 'center' },
+  source: { fontSize: 16, color: C.sub, textAlign: 'center' },
 });

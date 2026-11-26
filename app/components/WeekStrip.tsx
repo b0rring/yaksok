@@ -51,10 +51,10 @@ export default function WeekStrip({ days, dots, sel, onSelect }: { days: string[
 
 const styles = StyleSheet.create({
   strip: { flexDirection: 'row', gap: 5 },
-  dayCell: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 15, gap: 4, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.mist },
+  dayCell: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 16, gap: 4, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.mist },
   dayOn: { backgroundColor: C.primary, borderColor: C.primary },
-  dayWeek: { fontSize: 15, fontWeight: '700', color: C.sub },
+  dayWeek: { fontSize: 16, fontWeight: '700', color: C.sub },
   dayNum: { fontSize: 22, fontWeight: '800', color: C.text },
-  dots: { height: 10, flexDirection: 'row', gap: 4, alignItems: 'center' },
+  dots: { height: 12, flexDirection: 'row', gap: 4, alignItems: 'center' },
   dot: { width: 8, height: 8, borderRadius: 5 },
 });

@@ -88,3 +88,49 @@ export async function getKakaoKey(): Promise<string> {
     return '';
   }
 }
+
+// ── 계정·보호자 연동·커뮤니티 (서버 accounts.py) ──
+export type Role = 'patient' | 'guardian' | 'doctor';
+export type User = { id: number; login_id: string; name: string; role: Role; code: string };
+export type Post = { id: number; title: string; body: string; created: string; name: string; role: Role; comments: number };
+export type Comment = { id: number; body: string; created: string; name: string; role: Role };
+export type PatientData = { name: string; updated: string | null; plans: any[]; logs: any[]; visits: any[] };
+
+// 서버가 돌려주는 한국어 오류 문구(detail)를 그대로 던진다 (화면에서 보여 줌)
+export class ApiError extends Error {}
+async function call<T>(method: string, path: string, body?: unknown, token?: string | null): Promise<T> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15_000);
+  try {
+    const r = await fetch(`${BASE}${path}`, {
+      method,
+      headers: { 'content-type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new ApiError(typeof data.detail === 'string' ? data.detail : '잠시 뒤에 다시 해 주세요');
+    return data as T;
+  } catch (e) {
+    throw e instanceof ApiError ? e : new ApiError('서버에 연결하지 못했어요');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export const apiSignup = (b: { login_id: string; name: string; role: Role; password: string; invite?: string }) =>
+  call<{ token: string; user: User }>('POST', '/auth/signup', b);
+export const apiLogin = (login_id: string, password: string) => call<{ token: string; user: User }>('POST', '/auth/login', { login_id, password });
+export const apiMe = (t: string) => call<User>('GET', '/me', undefined, t);
+export const apiLinks = (t: string) => call<{ patients: { id: number; name: string }[]; guardians: { id: number; name: string }[] }>('GET', '/links', undefined, t);
+export const apiAddLink = (t: string, code: string) => call<{ id: number; name: string }>('POST', '/links', { code }, t);
+export const apiRemoveLink = (t: string, id: number) => call<{ ok: boolean }>('DELETE', `/links/${id}`, undefined, t);
+export const apiSync = (t: string, snap: { plans: unknown[]; logs: unknown[]; visits: unknown[] }) => call<{ ok: boolean }>('PUT', '/sync', snap, t);
+export const apiPatient = (t: string, id: number) => call<PatientData>('GET', `/patients/${id}/data`, undefined, t);
+export const apiPosts = () => call<Post[]>('GET', '/posts');
+export const apiPost = (id: number) => call<Omit<Post, 'comments'> & { comments: Comment[] }>('GET', `/posts/${id}`);
+export const apiAddPost = (t: string, title: string, body: string) => call<{ id: number }>('POST', '/posts', { title, body }, t);
+export const apiAddComment = (t: string, id: number, body: string) => call<{ ok: boolean }>('POST', `/posts/${id}/comments`, { body }, t);
+
+// 커뮤니티의 의사 답변 아래에 항상 보여 주는 안내
+export const DISCLAIMER = '일반적인 건강 정보이며 진료를 대신하지 않아요.';

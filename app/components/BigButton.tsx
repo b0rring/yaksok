@@ -29,7 +29,7 @@ export default function BigButton({ label, onPress, color = C.primary, variant =
 }
 
 const styles = StyleSheet.create({
-  btn: { minHeight: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
-  secondary: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
+  btn: { minHeight: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  secondary: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border },
   label: { color: '#fff', fontSize: 20, fontWeight: '800', textAlign: 'center' },
 });

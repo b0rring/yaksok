@@ -61,11 +61,11 @@ export function DialogProvider({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(31,31,31,0.45)', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  box: { ...CARD, width: '100%', maxWidth: 380, padding: 20, gap: 10 },
-  title: { fontSize: 22, fontWeight: '800', color: C.text, lineHeight: 29 },
-  message: { fontSize: 17, lineHeight: 26, color: C.sub },
-  actions: { gap: 10, marginTop: 10 },
-  btn: { minHeight: 54, borderRadius: R.ctl, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
-  secondary: { backgroundColor: C.bg },
+  box: { ...CARD, width: '100%', maxWidth: 380, padding: 20, gap: 12 },
+  title: { fontSize: 22, fontWeight: '800', color: C.text, lineHeight: 28 },
+  message: { fontSize: 18, lineHeight: 28, color: C.sub },
+  actions: { gap: 12, marginTop: 12 },
+  btn: { minHeight: 56, borderRadius: R.ctl, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  secondary: { backgroundColor: C.soft, borderWidth: 1.5, borderColor: C.border },
   btnText: { fontSize: 20, fontWeight: '800', color: '#fff' },
 });

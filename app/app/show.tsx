@@ -24,7 +24,7 @@ export default function Show() {
   if (!loaded) return null;
   if (!v)
     return (
-      <View style={[styles.outer, { flex: 1, justifyContent: 'center', gap: 14, backgroundColor: C.bg }]}>
+      <View style={[styles.outer, { flex: 1, justifyContent: 'center', gap: 16, backgroundColor: C.bg }]}>
         <Text style={styles.big}>진료 기록을 찾지 못했어요</Text>
         <BigButton label="홈으로" onPress={() => router.navigate('/')} />
       </View>
@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
   wrap: { ...CARD, padding: S.pad, gap: S.in },
   saved: { fontSize: 20, fontWeight: '800', color: C.green },
   date: { fontSize: 34, fontWeight: '800', color: C.text },
-  hospital: { fontSize: 37, fontWeight: '800', color: C.text },
-  label: { fontSize: 22, fontWeight: '800', color: C.green, marginTop: 10 },
-  big: { fontSize: 31, lineHeight: 44, fontWeight: '700', color: C.text },
-  small: { fontSize: 19, lineHeight: 27, color: C.sub },
+  hospital: { fontSize: 36, fontWeight: '800', color: C.text },
+  label: { fontSize: 22, fontWeight: '800', color: C.green, marginTop: 12 },
+  big: { fontSize: 30, lineHeight: 44, fontWeight: '700', color: C.text },
+  small: { fontSize: 18, lineHeight: 28, color: C.sub },
 });

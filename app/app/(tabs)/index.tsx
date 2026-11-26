@@ -4,7 +4,8 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
-import Chip from '../../components/Chip';
+import { SplitChip } from '../../components/Chip';
+import TabTitle from '../../components/TabTitle';
 import ChatFab from '../../components/ChatFab';
 import CalendarView from '../../components/CalendarView';
 import Icon from '../../components/Icon';
@@ -17,11 +18,11 @@ import { useTodayMeds } from '../../lib/useTodayMeds';
 // 지금 시각이 아침·점심·저녁 중 어디인지 (시간대 이름)
 // 상태별 카드 바탕(테두리 없음): 지금 먹을 시간대는 진한 푸른 바탕, 아직 시간 전은 옅은 회청색 바탕, 다 먹은 건 회녹색 바탕+체크 아이콘
 const SLOT_STYLE = {
-  now: { backgroundColor: C.mist },
-  later: { backgroundColor: C.soft },
-  done: { backgroundColor: '#E4EBE6' },
+  now: { backgroundColor: C.peach },
+  later: { backgroundColor: '#F4F4F1' },
+  done: { backgroundColor: '#E6F2EA' },
 } as const;
-const SLOT_CHIP = { now: C.orange, later: '#7B879A', done: '#6F8F7B' } as const;
+const SLOT_CHIP = { now: C.orange, later: '#5F7168', done: '#4F7A60' } as const;
 const period = (h: number) => (h < 5 ? '새벽' : h < 11 ? '아침' : h < 17 ? '점심' : h < 21 ? '저녁' : '밤');
 
 // 홈 = 오늘의 약 체크리스트: 지금 시각과 "지금 뭘 해야 하는지" 한 줄, 그 아래 시간대별로 "무슨 병 약"을 체크한다.
@@ -71,22 +72,17 @@ export default function Home() {
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.wrap} showsVerticalScrollIndicator={false}>
-        <View style={styles.top}>
-          <Text style={styles.headTitle}>오늘의 약</Text>
-          <View style={styles.right}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="설정"
-              onPress={() => router.push('/more')}
-              style={({ pressed }) => [styles.gear, pressed && { opacity: 0.6 }]}
-            >
-              <Icon name="settings" size={20} color={C.sub} />
+        <TabTitle
+          title="홈"
+          right={
+            <Pressable accessibilityRole="button" accessibilityLabel="설정" onPress={() => router.push('/more')} style={({ pressed }) => [styles.gear, pressed && { opacity: 0.6 }]}>
+              <Icon name="settings" size={22} color={C.sub} />
             </Pressable>
-          </View>
-        </View>
+          }
+        />
 
         <View style={styles.status}>
-          <Chip small text={`${dateText} ${period(now.getHours())} ${clock}`} />
+          <SplitChip parts={[dateText, `${period(now.getHours())} ${clock}`]} />
           <Text style={styles.statusText}>{summary}</Text>
           {total > 0 && (
             <View style={styles.bar}>
@@ -201,51 +197,48 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 7, paddingBottom: 102, gap: S.section },
-  top: { marginBottom: -S.gap, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 41 },
-  headTitle: { flexShrink: 0, fontSize: 20, fontWeight: '800', color: C.text },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  date: { fontSize: 17, color: C.sub },
-  gear: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 102, gap: S.section },
+  date: { fontSize: 18, color: C.sub },
+  gear: { width: 44, height: 44, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   status: { ...CARD, padding: S.pad, gap: S.in },
   nowRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  now: { fontSize: 19, fontWeight: '700', color: C.sub },
-  statusText: { fontSize: 26, lineHeight: 32, fontWeight: '800', color: C.text },
-  bar: { height: 12, borderRadius: 6, backgroundColor: C.soft, overflow: 'hidden' },
-  barFill: { height: 12, borderRadius: 6, backgroundColor: C.primary },
-  count: { fontSize: 17, color: C.sub },
+  now: { fontSize: 18, fontWeight: '700', color: C.sub },
+  statusText: { fontSize: 22, lineHeight: 32, fontWeight: '800', color: C.text },
+  bar: { height: 12, borderRadius: 8, backgroundColor: C.soft, overflow: 'hidden' },
+  barFill: { height: 12, borderRadius: 8, backgroundColor: C.primary },
+  count: { fontSize: 18, color: C.sub },
   // 시간대 하나 = 연한 큰 카드 안에 머리줄(아이콘·이름·시각·상태)과 약 묶음 카드들
   slot: { gap: S.gap, backgroundColor: C.soft, borderRadius: R.card, padding: S.item },
   // 시간대 이름표: 색을 꽉 채운 둥근 상자 안에 둥근 흰 원(그림)과 이름
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 26, padding: 5, paddingRight: 14 },
-  tagIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 28, padding: 5, paddingRight: 16 },
+  tagIcon: { width: 36, height: 36, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   tagText: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  slotHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 7 },
-  slotLeft: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 },
-  slotTime: { flexShrink: 0, fontSize: 15, color: C.sub },
+  slotHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  slotLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+  slotTime: { flexShrink: 0, fontSize: 16, color: C.sub },
   slotName: { fontSize: 20, fontWeight: '800', color: C.text, flexShrink: 1 },
-  chip: { flexShrink: 0, fontSize: 15, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 15, overflow: 'hidden' },
-  chipDone: { backgroundColor: '#6F8F7B', color: '#fff' },
+  chip: { flexShrink: 0, fontSize: 16, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, overflow: 'hidden' },
+  chipDone: { backgroundColor: '#4F7A60', color: '#fff' },
   chipLate: { backgroundColor: C.orange, color: '#fff' },
-  slotRight: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  slotRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   item: { ...CARD, padding: S.item, gap: S.in },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  check: { flex: 1, minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  expand: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  check: { flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 16 },
+  expand: { width: 44, height: 44, borderRadius: 24, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   drugRow: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in, gap: S.tight },
-  drugName: { fontSize: 19, lineHeight: 26, fontWeight: '700', color: C.text },
-  box: { width: 41, height: 41, borderRadius: 12, borderWidth: 3, borderColor: C.mist, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  drugName: { fontSize: 18, lineHeight: 28, fontWeight: '700', color: C.text },
+  box: { width: 40, height: 40, borderRadius: 12, borderWidth: 3, borderColor: C.border, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   boxDone: { backgroundColor: C.primary, borderColor: C.primary },
-  itemName: { fontSize: 22, lineHeight: 29, fontWeight: '800', color: C.text },
-  guess: { fontSize: 15, color: C.orange },
-  itemSub: { fontSize: 17, color: C.sub },
+  itemName: { fontSize: 20, lineHeight: 28, fontWeight: '800', color: C.text },
+  guess: { fontSize: 16, color: C.orange },
+  itemSub: { fontSize: 18, color: C.sub },
   // 홈은 두 구역: 오늘 먹을 약(체크리스트) / 캘린더. 구역마다 제목을 달고, 둘 사이는 줄과 넓은 간격으로 나눈다.
   part: { gap: S.gap },
   partTitle: { fontSize: 22, fontWeight: '800', color: C.text },
   calPart: { gap: S.gap, marginTop: S.section },
   // 구역 제목은 카드가 아니라 "선 — 아이콘·제목 — 선" 구분자: 카드(네모 상자)와 모양이 달라 한눈에 구역이 나뉜다
-  band: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  band: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rule: { flex: 1, height: 2, borderRadius: 1, backgroundColor: C.mist },
-  bandText: { fontSize: 20, fontWeight: '800', color: C.primary },
-  offline: { fontSize: 15, textAlign: 'center', color: C.red },
+  bandText: { fontSize: 22, fontWeight: '800', color: C.primary },
+  offline: { fontSize: 16, textAlign: 'center', color: C.red },
 });

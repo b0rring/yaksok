@@ -124,11 +124,11 @@ export default function Edit() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: S.page, paddingBottom: 51, gap: S.gap },
+  wrap: { padding: S.page, paddingBottom: 52, gap: S.gap },
   title: { fontSize: 24, fontWeight: '800', color: C.text, textAlign: 'center' },
-  card: { ...CARD, padding: S.pad, gap: 10 },
-  label: { fontSize: 17, fontWeight: '800', color: C.green },
-  input: { minHeight: 51, borderRadius: 12, backgroundColor: C.bg, paddingHorizontal: 14, paddingVertical: 10, fontSize: 19, color: C.text },
+  card: { ...CARD, padding: S.pad, gap: 12 },
+  label: { fontSize: 18, fontWeight: '800', color: C.green },
+  input: { minHeight: 52, borderRadius: 12, backgroundColor: C.soft, borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 16, paddingVertical: 12, fontSize: 18, color: C.text },
   multi: { minHeight: 76, textAlignVertical: 'top' },
-  hint: { fontSize: 15, lineHeight: 22, color: C.sub, textAlign: 'center' },
+  hint: { fontSize: 16, lineHeight: 24, color: C.sub, textAlign: 'center' },
 });

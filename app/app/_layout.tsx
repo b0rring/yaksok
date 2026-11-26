@@ -7,6 +7,7 @@ import { GuideProvider } from '../components/Guide';
 import HeaderLeft from '../components/HeaderLeft';
 import Intro from '../components/Intro';
 import JobBanner from '../components/JobBanner';
+import { AuthProvider } from '../lib/auth';
 import { JobsProvider } from '../lib/jobs';
 import { syncNotifications } from '../lib/notify';
 import { SettingsProvider } from '../lib/settings';
@@ -19,6 +20,10 @@ const TITLES: Record<string, string> = {
   plan: '복약 시간',
   show: '의사에게 보여주기',
   edit: '약 고치기',
+  account: '내 계정',
+  patient: '환자 약 보기',
+  post: '글 보기',
+  write: '글쓰기',
   more: '설정',
 };
 
@@ -41,6 +46,7 @@ export default function Layout() {
     <SettingsProvider>
       <DialogProvider>
         <GuideProvider>
+          <AuthProvider>
           <JobsProvider>
           <View style={{ flex: 1 }}>
             <Stack
@@ -61,6 +67,7 @@ export default function Layout() {
             <Boot />
           </View>
           </JobsProvider>
+          </AuthProvider>
         </GuideProvider>
       </DialogProvider>
     </SettingsProvider>

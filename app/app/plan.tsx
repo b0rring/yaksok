@@ -43,6 +43,6 @@ export default function Plan() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: C.bg, padding: 20, justifyContent: 'center', gap: 14 },
-  text: { fontSize: 27, fontWeight: '800', textAlign: 'center', marginBottom: 7, color: C.text },
+  wrap: { flex: 1, backgroundColor: C.bg, padding: 20, justifyContent: 'center', gap: 16 },
+  text: { fontSize: 26, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: C.text },
 });

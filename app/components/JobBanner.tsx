@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
   card: { ...CARD, padding: S.item, gap: S.in, shadowOpacity: 0.18, shadowRadius: 18, elevation: 10 },
   cardErr: { backgroundColor: '#FFF4EE' },
   row: { flexDirection: 'row', alignItems: 'center', gap: S.in },
-  title: { fontSize: 19, fontWeight: '800', color: C.text },
-  sub: { fontSize: 17, color: C.sub },
-  close: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 6 },
-  closeText: { fontSize: 17, fontWeight: '800', color: C.sub },
+  title: { fontSize: 18, fontWeight: '800', color: C.text },
+  sub: { fontSize: 18, color: C.sub },
+  close: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
+  closeText: { fontSize: 18, fontWeight: '800', color: C.sub },
 });

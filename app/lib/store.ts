@@ -16,7 +16,15 @@ async function read<T>(key: string, fallback: T): Promise<T> {
   const v = await AsyncStorage.getItem(key);
   return v ? JSON.parse(v) : fallback;
 }
-const write = (key: string, v: unknown) => AsyncStorage.setItem(key, JSON.stringify(v));
+// 저장할 때마다 알림을 보낸다: 로그인한 환자 계정이 서버에 동기화하는 신호 (lib/auth.tsx)
+let onWrite: (() => void) | null = null;
+export const setOnWrite = (f: (() => void) | null) => {
+  onWrite = f;
+};
+const write = async (key: string, v: unknown) => {
+  await AsyncStorage.setItem(key, JSON.stringify(v));
+  onWrite?.();
+};
 
 // 기기 로컬 날짜 (YYYY-MM-DD). 한국 시간 아침 8시 알림이 어제로 계산되지 않게 로컬 기준.
 const fmt = (d: Date) =>

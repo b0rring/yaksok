@@ -11,9 +11,9 @@ export default function HeaderLeft({ canGoBack }: { canGoBack?: boolean }) {
     <Pressable
       accessibilityRole="button"
       onPress={() => (canGoBack ? router.back() : router.navigate('/'))}
-      style={({ pressed }) => ({ minHeight: 37, justifyContent: 'center', paddingHorizontal: 7, opacity: pressed ? 0.6 : 1 })}
+      style={({ pressed }) => ({ minHeight: 36, justifyContent: 'center', paddingHorizontal: 8, opacity: pressed ? 0.6 : 1 })}
     >
-      <Text style={{ fontSize: 17, fontWeight: '800', color: C.primary }}>{canGoBack ? '‹ 뒤로' : '‹ 홈으로'}</Text>
+      <Text style={{ fontSize: 18, fontWeight: '800', color: C.primary }}>{canGoBack ? '‹ 뒤로' : '‹ 홈으로'}</Text>
     </Pressable>
   );
 }
