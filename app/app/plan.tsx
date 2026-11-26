@@ -21,7 +21,7 @@ export default function Plan() {
   const save = async () => {
     if (!picked.length) return ask({ title: '시간을 골라 주세요' });
     const r: ScanResult = JSON.parse(data);
-    await addPlan({ drugs: r.drugs.map((d) => d.name), slots: picked, days: 7, condition: r.condition, guess: r.guess, info: r.drugs });
+    await addPlan({ drugs: r.drugs.map((d) => d.name), slots: picked, days: 7, condition: r.condition, guess: r.guess, info: r.drugs, hospital: r.hospital || undefined, pharmacy: r.pharmacy || undefined, prescribedOn: r.date || undefined, metaAi: !!(r.hospital || r.pharmacy || r.date) });
     if (!(await scheduleSlots(await allActiveSlots()))) ask({ title: '알림을 켜 주세요', message: '설정에서 알림을 허용해 주세요.' });
     router.navigate('/');
   };

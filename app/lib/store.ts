@@ -50,6 +50,11 @@ export type Plan = {
   condition?: string;
   guess?: boolean;
   info?: Drug[];
+  // 처방 정보: 봉투에서 읽은(또는 직접 적은) 처방 병원, 조제 약국, 조제일. 짐작하지 않고 없으면 비워 둔다. metaAi = AI가 읽은 값
+  hospital?: string;
+  pharmacy?: string;
+  prescribedOn?: string;
+  metaAi?: boolean;
 };
 export const planTitle = (p: Plan) => (p.condition ? `${p.condition} 약` : '처방받은 약');
 export const planEnd = (p: Plan) => (p.stopped ? addDays(p.stopped, -1) : addDays(p.start, p.days - 1));
@@ -99,11 +104,15 @@ export type Visit = {
   transcript?: string;
 };
 export const getVisits = () => read<Visit[]>('visits', []);
-export async function addVisit(v: Omit<Visit, 'id' | 'date'>) {
-  const visit = { ...v, id: String(Date.now()), date: today() };
+export async function addVisit(v: Omit<Visit, 'id' | 'date'> & { date?: string }) {
+  const visit = { ...v, id: String(Date.now()), date: v.date || today() };
   await write('visits', [...(await getVisits()), visit]);
   return visit;
 }
+// 진료 기록 관리: 고치기·지우기
+export const updateVisit = async (id: string, patch: Partial<Visit>) =>
+  write('visits', (await getVisits()).map((v) => (v.id === id ? { ...v, ...patch } : v)));
+export const deleteVisit = async (id: string) => write('visits', (await getVisits()).filter((v) => v.id !== id));
 
 // ── 약 먹는 시간 (설정에서 바꿈) ──
 type Times = Partial<Record<Slot, { hour: number; minute: number }>>;

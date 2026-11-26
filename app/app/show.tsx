@@ -48,7 +48,8 @@ export default function Show() {
         </>
       )}
       </View>
-      <View style={{ marginTop: S.gap }}>
+      <View style={{ marginTop: S.gap, gap: S.in }}>
+        <BigButton label="이 기록 고치기" onPress={() => router.push({ pathname: '/visit-edit', params: { id: v.id } })} />
         <BigButton label="홈으로" variant="secondary" small onPress={() => router.navigate('/')} />
       </View>
     </ScrollView>

@@ -1,15 +1,15 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
-import { SplitChip } from '../../components/Chip';
+import Chip, { SplitChip } from '../../components/Chip';
 import TabTitle from '../../components/TabTitle';
 import ChatFab from '../../components/ChatFab';
 import CalendarView from '../../components/CalendarView';
 import Icon from '../../components/Icon';
-import SlotIcon from '../../components/SlotIcon';
+import { CheckBox, FlipBadge, PillGauge } from '../../components/Motion';
 import { getHealth } from '../../lib/api';
 import { planTitle, timeText, today } from '../../lib/store';
 import { C, CARD, R, S } from '../../lib/theme';
@@ -17,12 +17,18 @@ import { useTodayMeds } from '../../lib/useTodayMeds';
 
 // 지금 시각이 아침·점심·저녁 중 어디인지 (시간대 이름)
 // 상태별 카드 바탕(테두리 없음): 지금 먹을 시간대는 진한 푸른 바탕, 아직 시간 전은 옅은 회청색 바탕, 다 먹은 건 회녹색 바탕+체크 아이콘
-const SLOT_STYLE = {
-  now: { backgroundColor: C.peach },
-  later: { backgroundColor: '#F4F4F1' },
-  done: { backgroundColor: '#E6F2EA' },
-} as const;
+const SLOT_BG: [string, string, string] = [C.peach, '#F4F4F1', '#E6F2EA']; // 지금, 아직, 먹음
+// 시간대 상태가 바뀔 때(지금 → 먹음 등) 카드와 이름표 색이 갑자기 바뀌지 않고 0.35초 동안 스며들듯 바뀐다
+const STATE_IDX = { now: 0, later: 1, done: 2 } as const;
+function Tint({ st, colors, style, children }: { st: 'now' | 'later' | 'done'; colors: [string, string, string]; style: object; children: React.ReactNode }) {
+  const v = useRef(new Animated.Value(STATE_IDX[st])).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: STATE_IDX[st], duration: 350, useNativeDriver: false }).start();
+  }, [st, v]);
+  return <Animated.View style={[style, { backgroundColor: v.interpolate({ inputRange: [0, 1, 2], outputRange: colors }) }]}>{children}</Animated.View>;
+}
 const SLOT_CHIP = { now: C.orange, later: '#5F7168', done: '#4F7A60' } as const;
+const TAG_BG: [string, string, string] = [SLOT_CHIP.now, SLOT_CHIP.later, SLOT_CHIP.done];
 const period = (h: number) => (h < 5 ? '새벽' : h < 11 ? '아침' : h < 17 ? '점심' : h < 21 ? '저녁' : '밤');
 
 // 홈 = 오늘의 약 체크리스트: 지금 시각과 "지금 뭘 해야 하는지" 한 줄, 그 아래 시간대별로 "무슨 병 약"을 체크한다.
@@ -84,11 +90,7 @@ export default function Home() {
         <View style={styles.status}>
           <SplitChip parts={[dateText, `${period(now.getHours())} ${clock}`]} />
           <Text style={styles.statusText}>{summary}</Text>
-          {total > 0 && (
-            <View style={styles.bar}>
-              <View style={[styles.barFill, { width: `${(doneN / total) * 100}%` }]} />
-            </View>
-          )}
+          {total > 0 && <PillGauge total={total} done={doneN} />}
         </View>
 
         {!slots.length && <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />}
@@ -104,32 +106,30 @@ export default function Home() {
         {ordered.map((s) => {
           const st = stateOf(s);
           const now = st === 'now';
-          const left = s.items.filter((i) => !i.done).length;
           return (
-            <View key={s.id} style={[styles.slot, SLOT_STYLE[st]]}>
+            <Tint key={s.id} st={st} colors={SLOT_BG} style={styles.slot}>
               <View style={styles.slotHead}>
                 <View style={styles.slotLeft}>
-                  <View style={[styles.tag, { backgroundColor: SLOT_CHIP[st] }]}>
-                    <View style={styles.tagIcon}>
-                      {st === 'done' ? <Icon name="check" size={20} color={SLOT_CHIP.done} stroke={3.5} /> : <SlotIcon slot={s.id} size={26} />}
-                    </View>
+                  <Tint st={st} colors={TAG_BG} style={styles.tag}>
+                    <FlipBadge slot={s.id} done={st === 'done'} doneColor={SLOT_CHIP.done} />
                     <Text style={styles.tagText}>{s.label}</Text>
-                  </View>
+                  </Tint>
                   <Text numberOfLines={1} style={styles.slotTime}>{timeText(s)}</Text>
                 </View>
-                <View style={styles.slotRight}>
-                  {st !== 'later' && (
-                    <Text numberOfLines={1} style={[styles.chip, st === 'done' ? styles.chipDone : styles.chipLate]}>
-                      {st === 'done' ? '먹었어요' : '지금 드세요'}
-                    </Text>
-                  )}
-                </View>
+                {/* 묶음이 둘 이상이고 아직 남았을 때만, 머리줄 오른쪽에 "모두 체크"(겹친 체크 아이콘). 카드 높이는 변하지 않는다 */}
+                {st !== 'done' && s.items.length > 1 && (
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${s.label} 약 모두 체크`} onPress={() => eatAll(s.id)} style={[styles.allBtn, now && styles.allNow]}>
+                    <Icon name="checks" size={24} color={now ? '#fff' : C.primary} stroke={2.6} />
+                  </Pressable>
+                )}
               </View>
 
-              {s.items.map(({ plan, done }) => {
+              {/* 처방 묶음은 카드 하나 안에 줄로 나열하고 가는 선으로만 나눈다 (카드 안의 카드를 없앰) */}
+              <View style={styles.rows}>
+                {s.items.map(({ plan, done }, idx) => {
                   const k = `${s.id}:${plan.id}`;
                   return (
-                    <View key={plan.id} style={styles.item}>
+                    <View key={plan.id} style={[styles.row, idx > 0 && styles.rowLine]}>
                       <View style={styles.itemRow}>
                         <Pressable
                           accessibilityRole="checkbox"
@@ -138,12 +138,13 @@ export default function Home() {
                           onPress={() => eat(s.id, plan, done)}
                           style={({ pressed }) => [styles.check, pressed && { opacity: 0.8 }]}
                         >
-                          <View style={[styles.box, done && styles.boxDone, now && !done && { borderColor: C.orange }]}>
-                            {done && <Icon name="check" size={26} color="#fff" stroke={3.5} />}
-                          </View>
-                          <View style={{ flex: 1, gap: 2 }}>
-                            <Text style={[styles.itemName, done && { color: C.sub }]}>{planTitle(plan)}</Text>
-                            <Text style={styles.itemSub}>약 {plan.drugs.length}가지</Text>
+                          <CheckBox done={done} warn={now} delay={idx * 80} />
+                          <View style={{ flex: 1, gap: 4 }}>
+                            <View style={styles.titleLine}>
+                              <Text style={[styles.itemName, done && { color: C.sub }]}>{planTitle(plan)}</Text>
+                              <Chip small text={`약 ${plan.drugs.length}가지`} />
+                            </View>
+                            <Text numberOfLines={1} style={styles.itemSub}>{plan.drugs.join(', ')}</Text>
                             {plan.guess && <Text style={styles.guess}>병명은 AI 짐작</Text>}
                           </View>
                         </Pressable>
@@ -169,8 +170,8 @@ export default function Home() {
                     </View>
                   );
                 })}
-              {left > 1 && <BigButton label={`${s.label} 약 모두 먹었어요`} small onPress={() => eatAll(s.id)} />}
-            </View>
+              </View>
+            </Tint>
           );
         })}
           </View>
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
   barFill: { height: 12, borderRadius: 8, backgroundColor: C.primary },
   count: { fontSize: 18, color: C.sub },
   // 시간대 하나 = 연한 큰 카드 안에 머리줄(아이콘·이름·시각·상태)과 약 묶음 카드들
-  slot: { gap: S.gap, backgroundColor: C.soft, borderRadius: R.card, padding: S.item },
+  slot: { gap: S.in, borderRadius: R.card, padding: S.in },
   // 시간대 이름표: 색을 꽉 채운 둥근 상자 안에 둥근 흰 원(그림)과 이름
   tag: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 28, padding: 5, paddingRight: 16 },
   tagIcon: { width: 36, height: 36, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
@@ -218,10 +219,14 @@ const styles = StyleSheet.create({
   slotTime: { flexShrink: 0, fontSize: 16, color: C.sub },
   slotName: { fontSize: 20, fontWeight: '800', color: C.text, flexShrink: 1 },
   chip: { flexShrink: 0, fontSize: 16, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, overflow: 'hidden' },
+  allBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  allNow: { backgroundColor: C.orange, borderColor: C.orange },
   chipDone: { backgroundColor: '#4F7A60', color: '#fff' },
   chipLate: { backgroundColor: C.orange, color: '#fff' },
-  slotRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  item: { ...CARD, padding: S.item, gap: S.in },
+  rows: { ...CARD }, // overflow를 숨기면 iOS에서 카드 그림자가 잘린다
+  row: { padding: S.item, gap: S.in },
+  rowLine: { borderTopWidth: 1, borderTopColor: C.line },
+  titleLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   check: { flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 16 },
   expand: { width: 44, height: 44, borderRadius: 24, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },

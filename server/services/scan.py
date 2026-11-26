@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from fastapi import HTTPException
@@ -27,6 +28,9 @@ SCHEMA = {
         },
         "condition": {"type": "string"},
         "guess": {"type": "boolean"},
+        "hospital": {"type": "string"},
+        "pharmacy": {"type": "string"},
+        "date": {"type": "string"},
         "schedule": {
             "type": "object",
             "properties": {
@@ -46,6 +50,8 @@ PROMPT = """이 사진은 약 봉투, 처방전 또는 약 사진입니다. 노�
   확실하지 않은 내용은 지어내지 말고 "의사나 약사에게 물어보세요."라고 쓰세요.
 - condition: 이 약들을 무슨 병·증상 때문에 처방받았는지 짧은 우리말 명사로(예: 편도염, 고혈압, 감기). 봉투·처방전에 병명이나 증상이 적혀 있으면
   그대로 쓰고 guess=false. 적혀 있지 않으면 약들의 효능으로 가장 가능성 높은 것을 쓰고 guess=true. 짐작도 어려우면 condition을 빈 글자로 두고 guess=false.
+- hospital, pharmacy, date: 봉투·처방전에 인쇄된 처방 병원(의료기관) 이름, 조제한 약국 이름, 조제일(또는 처방일). 날짜는 YYYY-MM-DD로.
+  글자로 읽히지 않으면 지어내거나 짐작하지 말고 빈 글자로 두세요. (병명과 달리 병원·약국은 절대 추측하지 않습니다.)
 - schedule: 봉투나 처방전에 인쇄된 복용법에서 읽으세요. slots는 아침=morning, 점심=noon, 저녁=evening, days는 복용 일수입니다.
   인쇄된 복용법이 없으면 slots=["morning"], days=7로 두세요.
 - 약이 보이지 않는 사진이면 drugs를 빈 배열로 두세요.
@@ -53,6 +59,16 @@ PROMPT = """이 사진은 약 봉투, 처방전 또는 약 사진입니다. 노�
 
 SOURCE_MOCK = "식약처 e약은요 (시연용 예시 데이터)"
 SOURCE_AI = "AI가 사진을 읽어 정리한 내용이에요. 정확한 복용법은 의사나 약사에게 확인하세요."
+
+
+def clean_meta(data: dict) -> dict:
+    """병원·약국·조제일: 길이를 제한하고, 날짜는 YYYY-MM-DD 모양일 때만 쓴다."""
+    date = str(data.get("date") or "").strip()
+    return {
+        "hospital": str(data.get("hospital") or "").strip()[:40],
+        "pharmacy": str(data.get("pharmacy") or "").strip()[:40],
+        "date": date if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date) else "",
+    }
 
 
 def image_mime(data: bytes) -> str:
@@ -86,6 +102,7 @@ def scan(image: bytes) -> dict:
     slots = [s for s in sched.get("slots", []) if s in SLOTS] or ["morning"]
     days = max(1, min(int(sched.get("days") or 7), 90))
     condition = str(data.get("condition") or "").strip()[:20]
+    meta = clean_meta(data)
     return with_official(
         {
             "drugs": data["drugs"],
@@ -93,5 +110,6 @@ def scan(image: bytes) -> dict:
             "source": SOURCE_AI,
             "condition": condition,
             "guess": bool(data.get("guess")) and bool(condition),
+            **meta,
         }
     )

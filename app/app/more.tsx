@@ -37,7 +37,7 @@ export default function Settings() {
 
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={styles.wrap}>
-      <BigButton label={user ? `내 계정 (${user.name})` : '로그인 · 가입'} onPress={() => router.push('/account')} />
+      <BigButton label={user ? `내 계정 (${user.name})` : '로그인 또는 가입'} onPress={() => router.push('/account')} />
 
       <Section title="글씨 크기">
         <Choice options={SCALES} value={scale} onPick={(v) => set({ scale: v })} />

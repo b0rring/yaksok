@@ -9,8 +9,9 @@ export function useTodayMeds() {
   const [logs, setLogs] = useState<Log[]>([]);
 
   const load = useCallback(async () => {
-    setAll(await getPlans());
-    setLogs(await getLogs());
+    const [p, l] = await Promise.all([getPlans(), getLogs()]);
+    setAll(p); // 계획과 기록을 같은 순간에 반영해야 "안 먹은 상태로 잠깐 보였다가 먹은 상태로 바뀌는" 일이 없다
+    setLogs(l);
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 

@@ -14,7 +14,7 @@ export default function ChatFab() {
       onPress={() => router.push('/chat')}
       style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
     >
-      <Icon name="chat" size={24} color="#fff" />
+      <Icon name="sparkles" size={24} color="#fff" />
       <Text style={styles.label}>물어보기</Text>
     </Pressable>
   );
@@ -31,10 +31,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: C.primary,
+    backgroundColor: C.ai,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: C.primary,
+    shadowColor: C.ai,
     shadowOpacity: 0.3,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },

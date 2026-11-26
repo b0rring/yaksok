@@ -17,5 +17,14 @@
       "avoid": "칼륨 보충제나 소변을 늘리는 약과 같이 먹기 전에 의사와 상의하세요."
     }
   ],
-  "schedule": { "slots": ["morning", "evening"], "days": 7 }
+  "schedule": {
+    "slots": [
+      "morning",
+      "evening"
+    ],
+    "days": 7
+  },
+  "hospital": "행복내과의원",
+  "pharmacy": "온누리약국",
+  "date": "2026-11-26"
 }

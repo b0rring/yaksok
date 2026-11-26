@@ -5,7 +5,7 @@ export type Official = { name: string; company: string; efcy: string; use: strin
 // by: 설명을 누가 썼는지 — ai(AI가 정리, 기본) / user(직접 적음) / mix(직접 적은 것에 AI가 보탬)
 export type Drug = { name: string; effect: string; how: string; caution: string; avoid: string; official?: Official | null; by?: 'ai' | 'user' | 'mix' };
 // condition: 무슨 병·증상 때문에 처방받았는지 (없으면 빈 글). guess: 봉투에 없어서 AI가 약을 보고 짐작한 것
-export type ScanResult = { drugs: Drug[]; schedule: { slots: string[]; days: number }; source: string; condition?: string; guess?: boolean };
+export type ScanResult = { drugs: Drug[]; schedule: { slots: string[]; days: number }; source: string; condition?: string; guess?: boolean; hospital?: string; pharmacy?: string; date?: string };
 export type VisitSummary = { hospital: string; reason: string; summary: string; transcript?: string };
 
 export async function getHealth(): Promise<boolean> {

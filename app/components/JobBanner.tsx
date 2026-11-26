@@ -30,6 +30,7 @@ export default function JobBanner() {
       days: data.schedule.days,
       condition: data.condition,
       guess: data.guess,
+      hospital: data.hospital || undefined, pharmacy: data.pharmacy || undefined, prescribedOn: data.date || undefined, metaAi: !!(data.hospital || data.pharmacy || data.date),
       info: data.drugs,
     });
     if (!(await scheduleSlots(await allActiveSlots()))) ask({ title: '알림을 켜 주세요', message: '설정에서 알림을 허용해 주세요.' });
@@ -44,7 +45,7 @@ export default function JobBanner() {
     dismiss(job.id);
     ask({
       title: '알림과 캘린더에 추가할까요?',
-      message: `${data.condition ? `${data.condition} 약${data.guess ? ' (AI 짐작)' : ''}\n` : ''}${names.join(', ')}\n\n${when}\n${data.schedule.days}일 동안`,
+      message: `${data.condition ? `${data.condition} 약${data.guess ? ' (AI 짐작)' : ''}\n` : ''}${data.hospital ? `${data.hospital}\n` : ''}${names.join(', ')}\n\n${when}\n${data.schedule.days}일 동안`,
       actions: [
         {
           label: '추가',
@@ -74,7 +75,7 @@ export default function JobBanner() {
           <View key={j.id} style={[styles.card, j.status === 'error' && styles.cardErr]}>
             <View style={styles.row}>
               {j.status === 'running' ? (
-                <ActivityIndicator color={C.primary} />
+                <ActivityIndicator color={C.ai} />
               ) : (
                 <Icon name={j.status === 'done' ? 'check' : 'stop'} size={22} color={j.status === 'done' ? C.green : C.orange} stroke={3} />
               )}
@@ -99,7 +100,7 @@ export default function JobBanner() {
                 </Pressable>
               )}
             </View>
-            {j.status === 'done' && j.kind === 'scan' && <BigButton label="확인하기" small onPress={() => confirm(j)} />}
+            {j.status === 'done' && j.kind === 'scan' && <BigButton label="확인하기" color={C.ai} small onPress={() => confirm(j)} />}
             {j.status === 'done' && j.kind === 'visit' && (
               <BigButton
                 label="보기"

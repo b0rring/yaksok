@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Slot, SLOTS, allActiveSlots } from './store';
+import { Plan, Slot, SLOTS, activePlans, allActiveSlots, planTitle } from './store';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -10,28 +10,43 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const title = '약 드실 시간이에요';
-const body = '눌러서 오늘 약을 확인하세요.';
+// 알림 내용: 제목은 "아침 약 드실 시간이에요", 아래 줄에 어떤 병 약인지, 본문에 약 이름과 간단한 먹는 법.
+// (iOS 알림은 접힌 상태에서는 앞쪽 몇 줄만 보인다. 길게 눌러 펼치면 전부 보인다.)
+function content(label: string, plans: Plan[]) {
+  const names = plans.map(planTitle);
+  const lines = plans.map((p) => `${planTitle(p)}: ${p.drugs.join(', ')}`);
+  const how = plans.length === 1 ? plans[0].info?.find((d) => d.how)?.how : undefined; // 처방이 하나일 때만 먹는 법을 덧붙인다
+  return {
+    title: `${label} 약 드실 시간이에요`,
+    subtitle: names.join(', ') || undefined,
+    body: [...lines, how, '눌러서 먹었다고 체크하세요.'].filter(Boolean).join('\n'),
+    data: { url: '/' },
+  };
+}
 
 // 시간대 목록으로 알림을 통째로 다시 예약 (중복 알림 방지)
 export async function scheduleSlots(slots: Slot[]) {
   const p = await Notifications.requestPermissionsAsync();
   if (!p.granted) return false;
   await Notifications.cancelAllScheduledNotificationsAsync();
+  const plans = await activePlans();
   for (const s of SLOTS.filter((s) => slots.includes(s.id))) {
     await Notifications.scheduleNotificationAsync({
-      content: { title, body: `${s.label} 약 드실 시간이에요. ${body}` },
+      content: content(s.label, plans.filter((pl) => pl.slots.includes(s.id))),
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: s.hour, minute: s.minute },
     });
   }
   return true;
 }
 
+// 설정의 "알림 시험": 지금 등록된 첫 시간대의 실제 알림 모양을 5초 뒤에 보여 준다 (등록된 약이 없으면 안내 문구)
 export async function testIn5s() {
   const p = await Notifications.requestPermissionsAsync();
   if (!p.granted) return false;
+  const plans = await activePlans();
+  const slot = SLOTS.find((s) => plans.some((pl) => pl.slots.includes(s.id)));
   await Notifications.scheduleNotificationAsync({
-    content: { title, body },
+    content: slot ? content(slot.label, plans.filter((pl) => pl.slots.includes(slot.id))) : { title: '약 드실 시간이에요', body: '눌러서 오늘 약을 확인하세요.' },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5 },
   });
   return true;

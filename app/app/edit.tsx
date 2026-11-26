@@ -5,6 +5,7 @@ import { Text } from '../components/AppText';
 import BigButton from '../components/BigButton';
 import { useDialog } from '../components/Dialog';
 import { Drug, organizeDrugs } from '../lib/api';
+import { syncNotifications } from '../lib/notify';
 import { getPlans, updatePlan } from '../lib/store';
 import { C, CARD, S } from '../lib/theme';
 
@@ -28,6 +29,11 @@ export default function Edit() {
   const [condition, setCondition] = useState('');
   const [drugs, setDrugs] = useState<Drug[]>([]);
   const [busy, setBusy] = useState(false);
+  const [hospital, setHospital] = useState('');
+  const [pharmacy, setPharmacy] = useState('');
+  const [date, setDate] = useState(''); // 조제일 YYYY-MM-DD
+  const [metaOrig, setMetaOrig] = useState(''); // 처음 값(바뀌면 "AI가 읽음" 표시를 뗀다)
+  const [metaAi, setMetaAi] = useState(false);
 
   useEffect(() => {
     getPlans().then((all) => {
@@ -37,6 +43,11 @@ export default function Edit() {
       setOrig(p.condition ?? '');
       setCondition(p.condition ?? '');
       setGuess(!!p.guess);
+      setHospital(p.hospital ?? '');
+      setPharmacy(p.pharmacy ?? '');
+      setDate(p.prescribedOn ?? '');
+      setMetaOrig(`${p.hospital ?? ''}|${p.pharmacy ?? ''}|${p.prescribedOn ?? ''}`);
+      setMetaAi(!!p.metaAi);
       setDrugs(p.drugs.map((n) => p.info?.find((d) => d.name === n) ?? blank(n)));
     });
   }, [id]);
@@ -72,7 +83,10 @@ export default function Edit() {
     const list = drugs.map((d) => ({ ...d, name: d.name.trim() })).filter((d) => d.name);
     if (!list.length) return ask({ title: '약이 하나는 있어야 해요', message: '약 이름을 적어 주세요.' });
     const c = condition.trim();
-    await updatePlan(String(id), { condition: c, guess: guess && c === orig, drugs: list.map((d) => d.name), info: list });
+    const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date.trim()) ? date.trim() : '';
+    const meta = { hospital: hospital.trim(), pharmacy: pharmacy.trim(), prescribedOn: dateOk };
+    await updatePlan(String(id), { condition: c, guess: guess && c === orig, drugs: list.map((d) => d.name), info: list, ...meta, metaAi: metaAi && `${meta.hospital}|${meta.pharmacy}|${meta.prescribedOn}` === metaOrig });
+    syncNotifications().catch(() => {}); // 알림에 적힌 약 이름도 새로 맞춘다
     ask({ title: '저장했어요', actions: [{ label: '확인', onPress: () => (router.canGoBack() ? router.back() : router.navigate('/drugs')) }] });
   };
 
@@ -91,6 +105,15 @@ export default function Edit() {
         <View style={styles.card}>
           <Text style={styles.label}>무슨 병·증상 때문에 받은 약인가요?</Text>
           <TextInput value={condition} onChangeText={setCondition} placeholder="예: 편도염" placeholderTextColor={C.gray} style={styles.input} />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.label}>처방받은 병원</Text>
+          <TextInput value={hospital} onChangeText={setHospital} placeholder="병원 이름 (모르면 비워 두세요)" placeholderTextColor={C.gray} style={styles.input} />
+          <Text style={styles.label}>조제한 약국</Text>
+          <TextInput value={pharmacy} onChangeText={setPharmacy} placeholder="약국 이름" placeholderTextColor={C.gray} style={styles.input} />
+          <Text style={styles.label}>조제일</Text>
+          <TextInput value={date} onChangeText={setDate} keyboardType="numbers-and-punctuation" placeholder="예: 2026-11-27" placeholderTextColor={C.gray} style={styles.input} />
         </View>
 
         {drugs.map((d, i) => (
@@ -115,7 +138,7 @@ export default function Edit() {
         ))}
 
         <BigButton label="약 더 적기" variant="secondary" small onPress={() => setDrugs((all) => [...all, blank()])} />
-        <BigButton label={busy ? 'AI가 정리하는 중…' : 'AI로 정리하기'} variant="secondary" onPress={busy ? () => {} : organize} />
+        <BigButton label={busy ? 'AI가 정리하는 중…' : 'AI로 정리하기'} color={C.ai} onPress={busy ? () => {} : organize} />
         <Text style={styles.hint}>지금 적은 내용을 바탕으로 빈 칸만 채워요. 이미 적은 글은 바꾸지 않아요. AI가 쓴 내용은 틀릴 수 있어요.</Text>
         <BigButton label="저장" onPress={save} />
       </ScrollView>

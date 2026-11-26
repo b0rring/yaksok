@@ -20,6 +20,7 @@ const TITLES: Record<string, string> = {
   plan: '복약 시간',
   show: '의사에게 보여주기',
   edit: '약 고치기',
+  'visit-edit': '진료 기록 고치기',
   account: '내 계정',
   patient: '환자 약 보기',
   post: '글 보기',

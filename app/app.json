@@ -16,7 +16,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1F5E52",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -30,6 +30,7 @@
       "expo-router",
       "expo-status-bar",
       "expo-audio",
+      ["expo-notifications", { "icon": "./assets/notification-icon.png", "color": "#1F5E52" }],
       ["expo-location", { "locationWhenInUsePermission": "가까운 병원과 약국을 찾기 위해 현재 위치를 사용해요." }]
     ]
   }

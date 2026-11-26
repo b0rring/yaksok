@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -60,7 +61,7 @@ window.recenter = () => { map.setLevel(4); map.panTo(center); };
 </script></body></html>`;
 
 const meters = (d: string) => (Number(d) >= 1000 ? `${(Number(d) / 1000).toFixed(1)}km` : `${d}m`);
-const dept = (category: string) => category.split(' > ').slice(2).join(' · '); // "의료,건강 > 병원 > 내과" → "내과"
+const dept = (category: string) => category.split(' > ').slice(2).join(', '); // "의료,건강 > 병원 > 내과" → "내과"
 
 // 웹 미리보기용 예시 (웹에는 지도가 없어서 목록 화면만 확인하는 용도)
 const DEMO: Place[] = [
@@ -96,6 +97,7 @@ export default function Hospital() {
   // RN 0.88 타입이 ref에 클래스·ScrollView를 바로 못 받아서, 쓰는 함수만 좁게 적고 콜백으로 붙인다
   const ref = useRef<{ injectJavaScript: (s: string) => void } | null>(null);
   const scroller = useRef<{ scrollTo: (o: { y: number; animated?: boolean }) => void } | null>(null);
+  const params = useLocalSearchParams<{ q?: string; k?: string }>();
   const [kind, setKind] = useState<Kind>('HP8');
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState(''); // 실제로 검색에 쓰는 글 (검색 버튼·진료과를 눌렀을 때 바뀜)
@@ -122,6 +124,14 @@ export default function Hospital() {
       setPos({ ...SEOUL, real: false });
     })();
   }, [web]);
+
+  // 내 약 카드의 병원·약국 옆 검색 버튼으로 열렸으면 그 이름을 바로 검색한다
+  useEffect(() => {
+    if (!params.q) return;
+    setKind(params.k === 'PM9' ? 'PM9' : 'HP8');
+    setInput(params.q);
+    setKeyword(params.q);
+  }, [params.q, params.k]);
 
   const html = useMemo(() => (key && pos ? page(key, pos.lat, pos.lng) : null), [key, pos]);
 

@@ -133,7 +133,9 @@ export default function CalendarView({ mode }: { mode: 'week' | 'month' }) {
           {dayVisits.map((v, i) => (
             <View key={v.id} style={styles.row}>
               <View style={styles.nodeCol}>
-                <View style={[styles.node, styles.nodeVisit]} />
+                <View style={[styles.node, { backgroundColor: C.orange }]}>
+                  <Icon name="note" size={16} color="#fff" stroke={2.6} />
+                </View>
                 {i < dayVisits.length - 1 && <View style={styles.line} />}
               </View>
               <Pressable

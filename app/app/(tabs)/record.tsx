@@ -146,7 +146,10 @@ export default function Record() {
           <Text style={styles.text}>진료 녹음</Text>
           <Text style={styles.hint}>끝내면 한 번 물어본 뒤, 글로 정리해 드려요</Text>
           <BigButton label="녹음 시작" onPress={start} />
-          <BigButton label="의견서 사진으로 추가" variant="secondary" small onPress={addPhoto} />
+          <View style={styles.pair}>
+            <View style={{ flex: 1 }}><BigButton label="사진 추가" variant="secondary" small onPress={addPhoto} /></View>
+            <View style={{ flex: 1 }}><BigButton label="직접 추가" variant="secondary" small onPress={() => router.push('/visit-edit')} /></View>
+          </View>
         </View>
         <View style={styles.group}>
         <Text style={styles.section}>지난 진료 기록</Text>
@@ -158,7 +161,12 @@ export default function Record() {
             onPress={() => router.push({ pathname: '/show', params: { id: v.id } })}
             style={({ pressed }) => [styles.visit, pressed && { opacity: 0.85 }]}
           >
-            <Chip text={v.date.replace(/^\d+-0?(\d+)-0?(\d+)$/, '$1월 $2일')} />
+            <View style={styles.vTop}>
+              <Chip text={v.date.replace(/^\d+-0?(\d+)-0?(\d+)$/, '$1월 $2일')} />
+              <Pressable accessibilityRole="button" accessibilityLabel="진료 기록 고치기" onPress={() => router.push({ pathname: '/visit-edit', params: { id: v.id } })} style={styles.pen}>
+                <Icon name="edit" size={22} color={C.primary} />
+              </Pressable>
+            </View>
             <View style={styles.vBody}>
               <Text style={styles.vHospital}>{v.hospital}</Text>
               <Text style={styles.vSub} numberOfLines={2}>{v.reason}</Text>
@@ -179,14 +187,17 @@ export default function Record() {
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: C.bg, padding: S.page, justifyContent: 'center', gap: S.gap },
   text: { fontSize: 20, fontWeight: '800', textAlign: 'center', color: C.text },
-  micCircle: { ...CARD, alignSelf: 'center', width: 84, height: 84, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
+  micCircle: { ...CARD, alignSelf: 'center', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   hint: { fontSize: 18, textAlign: 'center', color: C.sub, marginBottom: 12 },
   list: { padding: S.page, paddingBottom: 36, gap: S.section },
   group: { gap: S.gap },
+  pair: { flexDirection: 'row', gap: S.in },
   startCard: { ...CARD, padding: S.pad, gap: S.in },
   section: { fontSize: 22, fontWeight: '800', color: C.text },
   empty: { fontSize: 18, color: C.sub },
   visit: { ...CARD, padding: S.pad, gap: S.gap },
+  vTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pen: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   vBody: { gap: 8 },
   vFoot: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in },
   vDate: { fontSize: 18, fontWeight: '700', color: C.sub },

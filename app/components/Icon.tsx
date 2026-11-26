@@ -1,4 +1,4 @@
-import { Ban, Search, X, CalendarDays, Camera, Check, ChevronDown, ChevronUp, Clock, FileText, House, MessageCircle, Mic, Minus, Pencil, Pill, Plus, Settings, Square, SquarePlus, Sun, Sunrise, Sunset, TriangleAlert, Users, Volume2 } from 'lucide-react-native';
+import { Ban, CheckCheck, Search, Sparkles, X, CalendarDays, Camera, Check, ChevronDown, ChevronUp, Clock, FileText, House, MessageCircle, Mic, Minus, Pencil, Pill, Plus, Settings, Square, SquarePlus, Sun, Sunrise, Sunset, TriangleAlert, Users, Volume2 } from 'lucide-react-native';
 
 // 앱 전체에서 쓰는 선(flat) 아이콘. 이모지 대신 이것만 쓴다.
 const ICONS = {
@@ -21,7 +21,9 @@ const ICONS = {
   clock: Clock,
   alert: TriangleAlert,
   ban: Ban,
+  checks: CheckCheck,
   search: Search,
+  sparkles: Sparkles,
   close: X,
   down: ChevronDown,
   up: ChevronUp,
