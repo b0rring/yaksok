@@ -71,7 +71,11 @@ export default function Home() {
   const [pick, setPick] = useState<string | null>(null); // 아래 목록에서 고른 시간대(없으면 지금 시간대)
   const dueNow = ordered.find((s) => stateOf(s) === 'now');
   const nextLater = slots.filter((s) => stateOf(s) === 'later').sort((a, b) => at(a) - at(b))[0];
-  const focus = ordered.find((s) => s.id === pick) ?? dueNow ?? nextLater ?? ordered[0];
+  // 맨 위 카드: 먹을 약이 하나라도 있으면 항상 하나를 보여 준다.
+  // 지금 시간대(시각이 지난 것 중 가장 늦은 시간대)는 다 먹었어도 "다 드셨어요"로 그대로 두고, 다음 시간대는 그 시간이 되기 전에는 올라오지 않는다.
+  // 첫 시간대 전(새벽)에는 하루의 마지막 시간대(예: 저녁)를 보여 준다. 아침이 되면 아침으로 바뀐다.
+  const lastSlot = [...slots].sort((a, b) => at(b) - at(a))[0];
+  const focus = ordered.find((s) => s.id === pick) ?? slots.find((s) => s.id === curId) ?? lastSlot;
   const nowCount = slots.reduce((n, s) => n + (stateOf(s) === 'now' ? s.items.filter((i) => !i.done).length : 0), 0);
   const hint = dueNow ? `지금 ${dueNow.label} 약 드실 시간이에요` : nextLater ? `다음은 ${nextLater.label} ${timeText(nextLater)}이에요` : '';
   const total = slots.reduce((n, s) => n + s.items.length, 0);
