@@ -40,12 +40,20 @@ export function JobsProvider({ children }: { children: ReactNode }) {
       patch(j.id, { status: 'running', code: undefined });
       const work =
         j.kind === 'scan'
-          ? scanImage(j.uri).then((scan) => ({ scan }))
+          ? scanImage(j.uri)
+              .then((scan) => ({ scan }))
+              // 약을 못 알아봤으면(422) 병원 서류일 수 있으니 진료 기록으로 정리해 본다
+              .catch(async (e) => {
+                if (!(e instanceof Error) || e.message !== '422') throw e;
+                const v = await scanVisit(j.uri);
+                patch(j.id, { kind: 'visit' });
+                return { visitId: (await addVisit(v)).id };
+              })
           : (j.voice ? sendVoice(j.uri) : scanVisit(j.uri)).then(async (v) => ({ visitId: (await addVisit(v)).id }));
       work
         .then((r) => {
           patch(j.id, { status: 'done', ...r });
-          if (j.kind === 'visit') setVersion((n) => n + 1);
+          if (j.kind === 'visit' || 'visitId' in r) setVersion((n) => n + 1);
         })
         .catch((e) => patch(j.id, { status: 'error', code: e instanceof Error ? e.message : '' }));
     },

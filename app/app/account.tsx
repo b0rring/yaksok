@@ -1,14 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from '../components/AppText';
+import ScreenTitle from '../components/ScreenTitle';
 import BigButton from '../components/BigButton';
 import Chip from '../components/Chip';
+import Icon, { IconName } from '../components/Icon';
+import Segmented from '../components/Segmented';
 import { ApiError, Role } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { C, CARD, S } from '../lib/theme';
 
 export const ROLE_LABEL: Record<Role, string> = { patient: '환자 (약 드시는 분)', guardian: '보호자', doctor: '의사' };
+const ROLE_ICON: Record<Role, IconName> = { patient: 'pill', guardian: 'users', doctor: 'doctor' };
 
 // 내 계정: 로그인·가입. 연결은 연동 계정 관리(links.tsx)에서 한다. 로그인은 선택이다 (안 해도 약 관리는 기기 안에서 된다).
 export default function Account() {
@@ -41,44 +45,59 @@ export default function Account() {
 
   if (!user)
     return (
-      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.page }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.wrap} keyboardShouldPersistTaps="handled">
+<ScreenTitle text="계정" />
           <Text style={styles.note}>로그인하면 보호자와 약 기록을 나누고, 커뮤니티에 글을 쓸 수 있어요. 로그인하지 않아도 약 관리는 그대로 돼요.</Text>
-          <View style={styles.pair}>
-            <View style={{ flex: 1 }}><BigButton label="로그인" variant={mode === 'login' ? 'primary' : 'secondary'} onPress={() => setMode('login')} /></View>
-            <View style={{ flex: 1 }}><BigButton label="가입하기" variant={mode === 'signup' ? 'primary' : 'secondary'} onPress={() => setMode('signup')} /></View>
-          </View>
+          <Segmented big options={[{ id: 'login', label: '로그인' }, { id: 'signup', label: '가입하기' }] as const} value={mode} onPick={setMode} />
           <View style={styles.card}>
-            <Text style={styles.label}>아이디</Text>
-            <TextInput value={loginId} onChangeText={setLoginId} autoCapitalize="none" autoCorrect={false} placeholder="영문·숫자 3자 이상" placeholderTextColor={C.gray} style={styles.input} />
+            <View style={styles.field}>
+              <Text style={styles.label}>아이디</Text>
+              <TextInput value={loginId} onChangeText={setLoginId} autoCapitalize="none" autoCorrect={false} placeholder="영문과 숫자 3자 이상" placeholderTextColor={C.gray} style={styles.input} />
+            </View>
             {mode === 'signup' && (
               <>
-                <Text style={styles.label}>이름</Text>
-                <TextInput value={name} onChangeText={setName} placeholder="보여질 이름" placeholderTextColor={C.gray} style={styles.input} />
-                <Text style={styles.label}>누구세요?</Text>
-                {(['patient', 'guardian', 'doctor'] as Role[]).map((r) => (
-                  <BigButton key={r} label={ROLE_LABEL[r]} variant={role === r ? 'primary' : 'secondary'} onPress={() => setRole(r)} />
-                ))}
+                <View style={styles.field}>
+                  <Text style={styles.label}>이름</Text>
+                  <TextInput value={name} onChangeText={setName} placeholder="보여질 이름" placeholderTextColor={C.gray} style={styles.input} />
+                </View>
+                <View style={styles.field}>
+                  <Text style={styles.label}>누구세요?</Text>
+                  <View style={{ gap: 8 }}>
+                    {(['patient', 'guardian', 'doctor'] as Role[]).map((r) => {
+                      const on = role === r;
+                      return (
+                        <Pressable key={r} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => setRole(r)} style={[styles.role, on && styles.roleOn]}>
+                          <Icon name={ROLE_ICON[r]} size={24} color={on ? '#fff' : C.primary} />
+                          <Text style={[styles.roleText, on && { color: '#fff' }]}>{ROLE_LABEL[r]}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
                 {role === 'doctor' && (
-                  <>
+                  <View style={styles.field}>
                     <Text style={styles.label}>의사 초대 코드</Text>
                     <TextInput value={invite} onChangeText={setInvite} autoCapitalize="characters" placeholder="시연용 초대 코드" placeholderTextColor={C.gray} style={styles.input} />
-                  </>
+                  </View>
                 )}
               </>
             )}
-            <Text style={styles.label}>비밀번호</Text>
-            <TextInput value={pw} onChangeText={setPw} secureTextEntry placeholder="4자 이상" placeholderTextColor={C.gray} style={styles.input} />
+            <View style={styles.field}>
+              <Text style={styles.label}>비밀번호</Text>
+              <TextInput value={pw} onChangeText={setPw} secureTextEntry placeholder="4자 이상" placeholderTextColor={C.gray} style={styles.input} />
+            </View>
             {!!err && <Text style={styles.err}>{err}</Text>}
+            <BigButton label={busy ? '잠시만요…' : mode === 'login' ? '로그인' : '가입하기'} onPress={busy ? () => {} : submit} />
           </View>
-          <BigButton label={busy ? '잠시만요…' : mode === 'login' ? '로그인' : '가입하기'} onPress={busy ? () => {} : submit} />
         </ScrollView>
       </KeyboardAvoidingView>
     );
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.page }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.wrap} keyboardShouldPersistTaps="handled">
+<ScreenTitle text="계정" />
         <View style={styles.card}>
           <Text style={styles.name}>{user.name}</Text>
           <Chip small text={ROLE_LABEL[user.role]} />
@@ -86,7 +105,7 @@ export default function Account() {
         </View>
 
         {(user.role === 'patient' || user.role === 'guardian') && (
-          <BigButton label="연동 계정 관리" onPress={() => router.push('/links')} />
+          <BigButton label="연동 계정 관리" icon="users" onPress={() => router.push('/links')} />
         )}
 
         {user.role === 'doctor' && (
@@ -102,18 +121,16 @@ export default function Account() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: S.page, paddingBottom: 40, gap: S.gap },
-  note: { fontSize: 18, lineHeight: 24, color: C.sub },
-  pair: { flexDirection: 'row', gap: S.in },
-  card: { ...CARD, padding: S.pad, gap: S.in },
-  label: { fontSize: 18, fontWeight: '800', color: C.green },
-  input: { minHeight: 56, borderRadius: 16, backgroundColor: C.soft, borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 16, fontSize: 18, color: C.text },
-  codeInput: { fontSize: 26, letterSpacing: 4, textAlign: 'center', fontWeight: '800' },
+  wrap: { padding: S.page, paddingBottom: 40, gap: 28 },
+  note: { fontSize: 18, lineHeight: 28, color: C.sub, marginTop: -8 },
+  card: { ...CARD, padding: S.pad, gap: 16 },
+  field: { gap: 8 },
+  label: { fontSize: 18, fontWeight: '800', color: C.text },
+  input: { minHeight: 56, borderRadius: 14, backgroundColor: '#fff', borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 16, fontSize: 18, color: C.text },
+  role: { minHeight: 64, borderRadius: 16, borderWidth: 1.5, borderColor: C.border, backgroundColor: '#fff', paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  roleOn: { backgroundColor: C.primary, borderColor: C.primary },
+  roleText: { fontSize: 18, fontWeight: '800', color: C.text },
   err: { fontSize: 18, color: C.red },
   name: { fontSize: 22, fontWeight: '800', color: C.text },
   sub: { fontSize: 18, lineHeight: 24, color: C.sub },
-  code: { fontSize: 40, fontWeight: '800', letterSpacing: 6, color: C.primary, textAlign: 'center' },
-  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S.in },
-  person: { fontSize: 20, fontWeight: '800', color: C.text, flexShrink: 1 },
-  patient: { gap: S.in, borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in },
 });

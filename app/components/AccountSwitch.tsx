@@ -18,6 +18,9 @@ export default function AccountSwitch() {
     switchTo(p).catch((e) => ask({ title: '바꾸지 못했어요', message: e instanceof ApiError ? e.message : '다시 해 주세요.' }));
   const chips = user.role === 'guardian' && links.patients.length ? [{ id: 0, name: '내 화면', me: true }, ...links.patients.map((p) => ({ ...p, me: false }))] : [];
 
+  // 보여 줄 것이 없으면 아무것도 그리지 않는다. 빈 View도 화면 간격(28)을 한 번 더 차지해 홈 제목과 첫 카드 사이가 두 배로 벌어졌다.
+  if (!chips.length && !links.incoming.length) return null;
+
   return (
     <View style={styles.wrap}>
       {chips.length > 0 && (

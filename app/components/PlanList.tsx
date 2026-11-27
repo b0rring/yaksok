@@ -22,6 +22,7 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
   const ask = useDialog();
   const router = useRouter();
   const [open, setOpen] = useState<string | null>(null); // 펼친 약 "계획id:약이름"
+  const [tab, setTab] = useState<'active' | 'past'>('active');
   const [visits, setVisits] = useState<Visit[]>([]);
   useEffect(() => {
     getVisits().then(setVisits);
@@ -67,8 +68,8 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
       <Text style={styles.metaLabel}>{label}</Text>
       <Text style={styles.metaValue}>{value}</Text>
       {!!findKind && (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${value} 찾기`} onPress={() => find(value, findKind)} style={({ pressed }) => [styles.round, pressed && { opacity: 0.6 }]}>
-          <Icon name="search" size={20} color={C.primary} />
+        <Pressable accessibilityRole="button" accessibilityLabel={`${value} 찾기`} onPress={() => find(value, findKind)} style={({ pressed }) => [styles.round, { backgroundColor: '#fff' }, pressed && { opacity: 0.6 }]}>
+          <Icon name="search" size={22} color={C.primary} stroke={2.4} />
         </Pressable>
       )}
     </View>
@@ -81,52 +82,57 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
     const hasMeta = !!(p.hospital || p.pharmacy || p.prescribedOn);
     return (
       <View key={p.id} style={styles.card}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>{planTitle(p)}</Text>
-          {isActiveCard && (
-            <Pressable accessibilityRole="button" accessibilityLabel="약 정보 고치기" onPress={() => router.push({ pathname: '/edit', params: { id: p.id } })} style={({ pressed }) => [styles.round, styles.pen, pressed && { opacity: 0.6 }]}>
-              <Icon name="edit" size={22} color={C.primary} />
-            </Pressable>
-          )}
+        <View style={{ gap: 4 }}>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{planTitle(p)}</Text>
+            {isActiveCard && (
+              <Pressable accessibilityRole="button" accessibilityLabel="약 정보 고치기" onPress={() => router.push({ pathname: '/edit', params: { id: p.id } })} style={({ pressed }) => [styles.round, pressed && { opacity: 0.6 }]}>
+                <Icon name="edit" size={22} color={C.primary} />
+              </Pressable>
+            )}
+          </View>
+          {p.guess && <Text style={styles.guess}>병명은 AI가 약을 보고 짐작했어요</Text>}
         </View>
-        {p.guess && <Text style={styles.guess}>병명은 AI가 약을 보고 짐작했어요</Text>}
 
         {/* 복용 기간: 진행 막대 */}
-        <View style={styles.period}>
+        <View style={styles.part}>
           <Text style={styles.blockLabel}>복용 기간</Text>
-        {isActiveCard ? (
-          <View style={{ gap: 8 }}>
-            <View style={styles.periodHead}>
-              <Text style={styles.periodText}>
-                {p.days}일 중 <Text style={styles.periodNow}>{n}일째</Text>
-              </Text>
-              <View style={styles.periodEnd}>
-                <Icon name="calendar" size={18} color={C.sub} />
-                <Text style={styles.periodEndText}>{md(addDays(p.start, p.days - 1))}까지</Text>
+          {isActiveCard ? (
+            <>
+              <View style={styles.periodHead}>
+                <Text style={styles.periodText}>
+                  {p.days}일 중 <Text style={styles.periodNow}>{n}일째</Text>
+                </Text>
+                <View style={styles.periodEnd}>
+                  <Icon name="calendar" size={18} color={C.sub} />
+                  <Text style={styles.periodEndText}>{md(addDays(p.start, p.days - 1))}까지</Text>
+                </View>
               </View>
+              <View style={styles.track}>
+                <View style={[styles.fill, { width: `${(n / p.days) * 100}%` }]} />
+              </View>
+            </>
+          ) : (
+            <View style={styles.periodEnd}>
+              <Icon name="calendar" size={18} color={C.sub} />
+              <Text style={styles.periodEndText}>{p.stopped ? `${md(p.stopped)}에 중지했어요` : `${md(end)}에 끝났어요`}</Text>
             </View>
-            <View style={styles.track}>
-              <View style={[styles.fill, { width: `${(n / p.days) * 100}%` }]} />
-            </View>
-          </View>
-        ) : (
-          <View style={styles.periodEnd}>
-            <Icon name="calendar" size={18} color={C.sub} />
-            <Text style={styles.periodEndText}>{p.stopped ? `${md(p.stopped)}에 중지했어요` : `${md(end)}에 끝났어요`}</Text>
-          </View>
-        )}
+          )}
         </View>
 
         {/* 처방 정보: 병원·약국·조제일 */}
         {hasMeta ? (
-          <View style={styles.meta}>
+          <View style={styles.part}>
             <Text style={styles.blockLabel}>처방 정보</Text>
-            {!!p.hospital && metaRow('병원', p.hospital, 'HP8')}
-            {!!p.pharmacy && metaRow('약국', p.pharmacy, 'PM9')}
-            {!!p.prescribedOn && metaRow('조제일', md(p.prescribedOn))}
+            <View style={styles.meta}>
+              {!!p.hospital && metaRow('병원', p.hospital, 'HP8')}
+              {!!p.pharmacy && metaRow('약국', p.pharmacy, 'PM9')}
+              {!!p.prescribedOn && metaRow('조제일', md(p.prescribedOn))}
+            </View>
             {!!relatedVisit && (
               <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/show', params: { id: relatedVisit.id } })} style={styles.metaLink}>
-                <Text style={styles.metaLinkText}>이날 진료 기록 보기 ›</Text>
+                <Text style={styles.metaLinkText}>이날 진료 기록 보기</Text>
+                <Icon name="right" size={20} color={C.primary} stroke={2.6} />
               </Pressable>
             )}
             {!!p.metaAi && <Text style={styles.ai}>AI가 봉투에서 읽은 내용이에요. 틀리면 고쳐 주세요.</Text>}
@@ -138,31 +144,31 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
           </Pressable>
         ) : null}
 
-        <View style={styles.drugs}>
-        <Text style={styles.blockLabel}>약 {p.drugs.length}가지</Text>
-        {p.drugs.map((name) => {
-          const info = p.info?.find((d) => d.name === name);
-          const k = `${p.id}:${name}`;
-          const on = open === k;
-          return (
-            <View key={name} style={styles.drug}>
-              <View style={styles.drugHead}>
-                <View style={styles.drugTitle}>
-                  <Text style={styles.drugName}>{name}</Text>
-                  {!!info?.dose && <Chip small text={`1회 ${info.dose}`} />}
+        <View style={styles.part}>
+          <Text style={styles.blockLabel}>약 {p.drugs.length}가지</Text>
+          {p.drugs.map((name) => {
+            const info = p.info?.find((d) => d.name === name);
+            const k = `${p.id}:${name}`;
+            const on = open === k;
+            return (
+              <View key={name} style={[styles.drug, on && styles.drugOpen]}>
+                <View style={styles.drugHead}>
+                  <View style={styles.drugTitle}>
+                    <Text style={[styles.drugName, on && { fontSize: 22, fontWeight: '800' }]}>{name}</Text>
+                    {!!info?.dose && <Chip small text={`1회 ${info.dose}`} />}
+                  </View>
+                  {!!info && (
+                    <Pressable accessibilityRole="button" accessibilityLabel={on ? `${name} 설명 접기` : `${name} 설명 보기`} onPress={() => setOpen(on ? null : k)} style={({ pressed }) => [styles.more, pressed && { opacity: 0.6 }]}>
+                      <Text style={styles.moreText}>{on ? '접기' : '자세히'}</Text>
+                      <Icon name={on ? 'up' : 'down'} size={18} color={C.primary} stroke={2.6} />
+                    </Pressable>
+                  )}
                 </View>
-                {!!info && (
-                  <Pressable accessibilityRole="button" accessibilityLabel={on ? `${name} 설명 접기` : `${name} 설명 보기`} onPress={() => setOpen(on ? null : k)} style={({ pressed }) => [styles.more, pressed && { opacity: 0.6 }]}>
-                    <Text style={styles.moreText}>{on ? '접기' : '자세히'}</Text>
-                    <Icon name={on ? 'up' : 'down'} size={18} color={C.primary} />
-                  </Pressable>
-                )}
+                {!!info?.effect && !on && <Text style={styles.effect}>{info.effect}</Text>}
+                {!!info && on && <DrugCard d={info} bare compact speak />}
               </View>
-              {!!info?.effect && !on && <Text style={styles.effect}>{info.effect}</Text>}
-              {!!info && on && <DrugCard d={info} bare speak />}
-            </View>
-          );
-        })}
+            );
+          })}
         </View>
 
         <View style={styles.actions}>
@@ -170,8 +176,8 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
             ? ([['복용 중지', () => stop(p)], ['삭제', () => remove(p)]] as [string, () => void, boolean?][])
             : ([['다시 먹기', () => again(p), true], ['삭제', () => remove(p)]] as [string, () => void, boolean?][])
           ).map(([label, onPress, main]) => (
-            <Pressable key={label} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.action, main && styles.actionMain, pressed && { opacity: 0.6 }]}>
-              <Text style={[styles.actionText, main && { color: '#fff' }, label === '삭제' && { color: C.red }]}>{label}</Text>
+            <Pressable key={label} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.action, main && styles.actionMain, label === '삭제' && styles.actionDel, pressed && { opacity: 0.6 }]}>
+              <Text style={[styles.actionText, main && { color: '#fff' }, label === '삭제' && { color: C.orange }]}>{label}</Text>
             </Pressable>
           ))}
         </View>
@@ -180,65 +186,62 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
   };
 
   if (!active.length && !past.length) return null;
+  const shown = tab === 'active' ? active : past;
   return (
     <View style={styles.wrap}>
-      {!!active.length && (
-        <View style={styles.group}>
-          <Text style={styles.section}>드시고 있는 약</Text>
-          {active.map((p) => card(p, true))}
-        </View>
-      )}
-      {!!past.length && (
-        <View style={styles.group}>
-          <Text style={styles.section}>지난 약</Text>
-          {past.map((p) => card(p, false))}
-        </View>
-      )}
+      <View accessibilityRole="tablist" style={styles.seg}>
+        {([['active', `먹는 중 ${active.length}`], ['past', `지난 약 ${past.length}`]] as const).map(([v, label]) => (
+          <Pressable key={v} accessibilityRole="tab" accessibilityState={{ selected: tab === v }} onPress={() => setTab(v)} style={[styles.segItem, tab === v && styles.segOn]}>
+            <Text style={[styles.segText, tab === v && { color: C.primary }]}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {shown.length ? shown.map((p) => card(p, tab === 'active')) : <Text style={styles.none}>{tab === 'active' ? '지금 드시는 약이 없어요' : '지난 약이 아직 없어요'}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: S.section },
-  group: { gap: S.gap },
-  section: { fontSize: 22, fontWeight: '800', color: C.text },
-  card: { ...CARD, padding: S.item, gap: S.in },
+  wrap: { gap: S.gap },
+  seg: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 28, backgroundColor: C.fill },
+  segItem: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  segOn: { backgroundColor: '#fff', shadowColor: '#1E3A2F', shadowOpacity: 0.15, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
+  segText: { fontSize: 18, fontWeight: '800', color: C.sub },
+  none: { fontSize: 18, color: C.sub, textAlign: 'center', marginTop: 20 },
+  card: { ...CARD, padding: S.pad, gap: 20 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  title: { flex: 1, fontSize: 20, lineHeight: 28, fontWeight: '800', color: C.text },
+  title: { flex: 1, fontSize: 24, lineHeight: 32, fontWeight: '900', letterSpacing: -0.5, color: C.text },
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
-  pen: {},
   guess: { fontSize: 16, color: C.orange },
-  // 복용 기간
-  blockLabel: { fontSize: 16, fontWeight: '800', color: C.primary },
-  period: { gap: 8, backgroundColor: C.soft, borderRadius: 12, padding: S.item },
+  part: { gap: 8 },
+  blockLabel: { fontSize: 16, fontWeight: '700', color: C.sub },
   periodHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  periodText: { fontSize: 18, color: C.sub },
-  periodNow: { fontSize: 20, fontWeight: '800', color: C.primary },
+  periodText: { fontSize: 22, fontWeight: '800', color: C.text },
+  periodNow: { fontSize: 22, fontWeight: '900', color: C.primary },
   periodEnd: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   periodEndText: { fontSize: 16, color: C.sub },
-  track: { height: 8, borderRadius: 4, backgroundColor: '#fff', overflow: 'hidden' },
+  track: { height: 8, borderRadius: 4, backgroundColor: C.fill, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4, backgroundColor: C.primary },
-  // 처방 정보
-  meta: { backgroundColor: C.soft, borderRadius: 12, padding: S.item, gap: 8 },
-  drugs: { backgroundColor: C.soft, borderRadius: 12, padding: S.item, gap: S.in },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: S.in, minHeight: 44 },
-  metaLabel: { width: 60, fontSize: 16, fontWeight: '800', color: C.sub },
-  metaValue: { flex: 1, fontSize: 18, lineHeight: 24, fontWeight: '700', color: C.text },
-  metaLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: S.in },
-  metaLinkText: { fontSize: 17, fontWeight: '800', color: C.primary },
-  ai: { fontSize: 15, color: C.ai },
+  meta: { backgroundColor: C.soft, borderRadius: 14, paddingVertical: 6, paddingLeft: 16, paddingRight: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 },
+  metaLabel: { width: 56, fontSize: 16, fontWeight: '700', color: C.sub },
+  metaValue: { flex: 1, fontSize: 18, lineHeight: 24, fontWeight: '800', color: C.text },
+  metaLink: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 2 },
+  metaLinkText: { fontSize: 18, fontWeight: '800', color: C.primary },
+  ai: { fontSize: 16, color: C.ai },
   addMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
-  addMetaText: { fontSize: 17, fontWeight: '800', color: C.primary },
-  // 약
-  drug: { gap: 4, backgroundColor: '#fff', borderRadius: 12, padding: S.in },
-  drugHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  drugTitle: { flex: 1, gap: 4 },
-  drugName: { fontSize: 18, lineHeight: 24, fontWeight: '700', color: C.text, flexShrink: 1 },
-  more: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: C.fill },
+  addMetaText: { fontSize: 18, fontWeight: '800', color: C.primary },
+  drug: { gap: 8, backgroundColor: C.soft, borderRadius: 16, padding: 14 },
+  drugOpen: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line },
+  drugHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  drugTitle: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: 8, minHeight: 44 },
+  drugName: { fontSize: 20, lineHeight: 28, fontWeight: '800', color: C.text },
+  more: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: '#fff' },
   moreText: { fontSize: 16, fontWeight: '800', color: C.primary },
-  effect: { fontSize: 18, lineHeight: 24, color: C.sub },
-  actions: { flexDirection: 'row', gap: S.in, marginTop: 4 },
+  effect: { fontSize: 18, lineHeight: 26, color: C.sub },
+  actions: { flexDirection: 'row', gap: S.in },
   action: { flex: 1, minHeight: 56, borderRadius: 28, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
-  actionMain: { backgroundColor: C.primary, borderColor: C.primary },
+  actionMain: { backgroundColor: C.primary },
+  actionDel: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E7B9A5' },
   actionText: { fontSize: 20, fontWeight: '800', color: C.primary },
 });

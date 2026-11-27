@@ -14,7 +14,7 @@ import { SettingsProvider } from '../lib/settings';
 import { C } from '../lib/theme';
 
 // 화면 뒤 바탕을 흰색으로: 기본값(연회색)이 하단 탭바의 둥근 모서리 뒤로 비쳐 회색 모서리로 보였다
-const THEME = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: C.bg, card: C.card, border: 'transparent' } };
+const THEME = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: C.page, card: C.card, border: 'transparent' } };
 
 // 탭 화면은 (tabs) 안에, 나머지(결과·시간 고르기·보여주기·설정)는 여기서 뒤로 가기가 있는 화면으로 연다.
 const TITLES: Record<string, string> = {
@@ -58,13 +58,13 @@ export default function Layout() {
               screenOptions={{
                 headerLeft: ({ canGoBack }) => <HeaderLeft canGoBack={canGoBack} />,
                 headerTitleStyle: { fontSize: 20, fontWeight: '800', color: C.primary },
-                headerStyle: { backgroundColor: C.bg },
+                headerStyle: { backgroundColor: C.page },
                 headerShadowVisible: false,
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               {Object.entries(TITLES).map(([name, title]) => (
-                <Stack.Screen key={name} name={name} options={{ title }} />
+                <Stack.Screen key={name} name={name} options={{ title, headerShown: false }} />
               ))}
             </Stack>
             <JobBanner />

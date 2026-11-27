@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Text } from './AppText';
 import Svg, { Circle, Line } from 'react-native-svg';
 import Icon from './Icon';
 import SlotIcon from './SlotIcon';
@@ -85,8 +86,41 @@ export function FlipBadge({ slot, done, doneColor }: { slot: 'morning' | 'noon' 
   );
 }
 
-// 알약 한 알: 먹었으면 초록 두 색 알약, 아직이면 흰 속의 테두리 알약. 먹은 순간 한 번 커졌다 돌아온다(작아졌다 커지지 않는다).
-function Pill({ on, delay }: { on: boolean; delay: number }) {
+// 알약 한 알: 먹음 = 초록 두 색 알약(가운데 흰 이음선, 반짝임), 지금 = 흰 속 + 산호 테두리 + 점선 이음선, 아직 = 연한 속 + 갈색빛 테두리.
+// 먹은 순간 한 번 커졌다 돌아온다(작아졌다 커지지 않는다).
+type PillState = 'done' | 'now' | 'later';
+function PillSvg({ state, size }: { state: PillState; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 32 32">
+      {state === 'done' && (
+        <>
+          <Circle cx={9.5} cy={22.5} r={6} fill={C.primary} />
+          <Line x1={9.5} y1={22.5} x2={16} y2={16} stroke={C.primary} strokeWidth={12} />
+          <Line x1={16} y1={16} x2={22.5} y2={9.5} stroke={C.mint} strokeWidth={12} />
+          <Circle cx={22.5} cy={9.5} r={6} fill={C.mint} />
+          <Line x1={13.2} y1={13.2} x2={18.8} y2={18.8} stroke="#fff" strokeWidth={1.4} strokeOpacity={0.5} />
+          <Line x1={8.5} y1={19.5} x2={12} y2={16} stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeOpacity={0.6} />
+        </>
+      )}
+      {state === 'now' && (
+        <>
+          <Line x1={9.5} y1={22.5} x2={22.5} y2={9.5} stroke={C.orange} strokeWidth={14.5} strokeLinecap="round" />
+          <Line x1={9.5} y1={22.5} x2={22.5} y2={9.5} stroke="#fff" strokeWidth={9.5} strokeLinecap="round" />
+          <Line x1={13.6} y1={13.6} x2={18.4} y2={18.4} stroke={C.orange} strokeWidth={1.6} strokeDasharray="1.6 1.6" />
+        </>
+      )}
+      {state === 'later' && (
+        <>
+          <Line x1={9.5} y1={22.5} x2={22.5} y2={9.5} stroke={C.laterPill} strokeWidth={13} strokeLinecap="round" />
+          <Line x1={9.5} y1={22.5} x2={22.5} y2={9.5} stroke="#FFF7F2" strokeWidth={9.5} strokeLinecap="round" />
+        </>
+      )}
+    </Svg>
+  );
+}
+
+function Pill({ state, delay }: { state: PillState; delay: number }) {
+  const on = state === 'done';
   const shown = useLate(on, delay);
   const s = useRef(new Animated.Value(1)).current;
   const first = useRef(true);
@@ -104,38 +138,41 @@ function Pill({ on, delay }: { on: boolean; delay: number }) {
   }, [shown, s]);
   return (
     <Animated.View style={[styles.pill, { transform: [{ scale: s }] }]}>
-      <Svg width={40} height={40} viewBox="0 0 32 32">
-        {shown ? (
-          <>
-            <Circle cx={9} cy={23} r={6.5} fill={C.primary} />
-            <Line x1={9} y1={23} x2={16} y2={16} stroke={C.primary} strokeWidth={13} />
-            <Line x1={16} y1={16} x2={23} y2={9} stroke="#7CC4A8" strokeWidth={13} />
-            <Circle cx={23} cy={9} r={6.5} fill="#7CC4A8" />
-            <Line x1={10} y1={20} x2={14} y2={16} stroke="#fff" strokeWidth={2} strokeLinecap="round" opacity={0.55} />
-          </>
-        ) : (
-          <>
-            <Line x1={9} y1={23} x2={23} y2={9} stroke={C.border} strokeWidth={14} strokeLinecap="round" />
-            <Line x1={9} y1={23} x2={23} y2={9} stroke="#fff" strokeWidth={9.5} strokeLinecap="round" />
-          </>
-        )}
-      </Svg>
+      <PillSvg state={on && !shown ? 'later' : state} size={40} />
     </Animated.View>
   );
 }
 
-// 오늘 약 게이지: 먹어야 할 횟수만큼 알약을 늘어놓고, 먹은 만큼 초록으로 채운다. 한꺼번에 여럿이 채워지면 차례로 채워진다.
-export function PillGauge({ total, done }: { total: number; done: number }) {
+// 오늘 약 게이지: 먹어야 할 횟수만큼 알약을 늘어놓는다. 먹음 / 지금 먹을 것 / 아직으로 나누고, 아래 범례(글자)로 색만으로 뜻을 전하지 않게 한다.
+// 한꺼번에 여럿이 채워지면 차례로 채워진다.
+export function PillGauge({ total, done, now = 0 }: { total: number; done: number; now?: number }) {
   const prev = useRef(done);
   const base = prev.current; // 이번에 새로 채워지는 알약은 base 번째부터
   useEffect(() => {
     prev.current = done;
   }, [done]);
+  const later = Math.max(0, total - done - now);
+  const stateOf = (i: number): PillState => (i < done ? 'done' : i < done + now ? 'now' : 'later');
+  const legend: { st: PillState; label: string; n: number; color: string }[] = [
+    { st: 'done', label: '먹음', n: done, color: C.primary },
+    { st: 'now', label: '지금', n: now, color: C.orange },
+    { st: 'later', label: '남음', n: later, color: C.sub },
+  ];
   return (
-    <View style={styles.row} accessibilityLabel={`오늘 ${total}개 중 ${done}개 먹었어요`}>
-      {Array.from({ length: total }, (_, i) => (
-        <Pill key={i} on={i < done} delay={i >= base ? (i - base) * 90 : 0} />
-      ))}
+    <View accessibilityRole="image" accessibilityLabel={`오늘 ${total}개 중 ${done}개 먹었고, 지금 ${now}개, 나중에 ${later}개`} style={styles.gauge}>
+      <View style={styles.row}>
+        {Array.from({ length: total }, (_, i) => (
+          <Pill key={i} state={stateOf(i)} delay={i >= base ? (i - base) * 90 : 0} />
+        ))}
+      </View>
+      <View style={styles.legend}>
+        {legend.filter((l) => l.n > 0).map((l) => (
+          <View key={l.st} style={styles.legendItem}>
+            <PillSvg state={l.st} size={24} />
+            <Text style={[styles.legendText, { color: l.color }]}>{l.label} {l.n}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -146,5 +183,9 @@ const styles = StyleSheet.create({
   badge: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   layer: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   pill: { padding: 2 },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, paddingVertical: 4 },
+  gauge: { gap: 6 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, marginLeft: -4 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 4 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  legendText: { fontSize: 16, fontWeight: '700' },
 });

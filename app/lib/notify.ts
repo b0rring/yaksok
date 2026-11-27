@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Plan, Slot, SLOTS, allActiveSlots, localActivePlans, planTitle } from './store';
 
@@ -24,11 +25,21 @@ function content(label: string, plans: Plan[]) {
   };
 }
 
-// 시간대 목록으로 알림을 통째로 다시 예약 (중복 알림 방지)
+// 설정에서 "복약 알림"을 껐는지 (저장된 설정을 직접 읽는다)
+const alarmOn = async () => {
+  try {
+    return JSON.parse((await AsyncStorage.getItem('settings')) || '{}').alarm !== false;
+  } catch {
+    return true;
+  }
+};
+
+// 시간대 목록으로 알림을 통째로 다시 예약 (중복 알림 방지). "복약 알림"이 꺼져 있으면 예약하지 않는다.
 export async function scheduleSlots(slots: Slot[]) {
   const p = await Notifications.requestPermissionsAsync();
   if (!p.granted) return false;
   await Notifications.cancelAllScheduledNotificationsAsync();
+  if (!(await alarmOn())) return true;
   const plans = await localActivePlans();
   for (const s of SLOTS.filter((s) => slots.includes(s.id))) {
     await Notifications.scheduleNotificationAsync({

@@ -17,6 +17,6 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  wrap: { paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 28, gap: S.section },
+  safe: { flex: 1, backgroundColor: C.page },
+  wrap: { paddingHorizontal: S.page, paddingTop: 16, paddingBottom: 102, gap: S.section },
 });

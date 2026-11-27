@@ -6,11 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
 import Chip from '../../components/Chip';
 import Section from '../../components/Section';
+import SlotIcon from '../../components/SlotIcon';
 import HomeSummary from '../../components/HomeSummary';
 import AccountSwitch from '../../components/AccountSwitch';
 import TabTitle from '../../components/TabTitle';
 import ChatFab from '../../components/ChatFab';
-import CalendarView from '../../components/CalendarView';
 import Icon from '../../components/Icon';
 import { CheckBox, FlipBadge, PillGauge } from '../../components/Motion';
 import { getHealth } from '../../lib/api';
@@ -21,7 +21,7 @@ import { useTodayMeds } from '../../lib/useTodayMeds';
 
 // 지금 시각이 아침·점심·저녁 중 어디인지 (시간대 이름)
 // 상태별 카드 바탕(테두리 없음): 지금 먹을 시간대는 진한 푸른 바탕, 아직 시간 전은 옅은 회청색 바탕, 다 먹은 건 회녹색 바탕+체크 아이콘
-const SLOT_BG: [string, string, string] = [C.peach, '#F4F4F1', '#E6F2EA']; // 지금, 아직, 먹음
+const SLOT_BG: [string, string, string] = [C.peach, C.soft, C.done]; // 지금, 아직, 먹음
 // 시간대 상태가 바뀔 때(지금 → 먹음 등) 카드와 이름표 색이 갑자기 바뀌지 않고 0.35초 동안 스며들듯 바뀐다
 const STATE_IDX = { now: 0, later: 1, done: 2 } as const;
 function Tint({ st, colors, style, children }: { st: 'now' | 'later' | 'done'; colors: [string, string, string]; style: object; children: React.ReactNode }) {
@@ -68,8 +68,11 @@ export default function Home() {
   // 순서: 지금 시간대(시각이 지난 것 중 가장 늦은 시간대)는 다 먹었어도 맨 위, 나머지는 아침·점심·저녁 시간 순
   const curId = slots.filter((s) => at(s) <= nowMin).sort((a, b) => at(b) - at(a))[0]?.id;
   const ordered = [...slots].sort((a, b) => (b.id === curId ? 1 : 0) - (a.id === curId ? 1 : 0) || at(a) - at(b));
+  const [pick, setPick] = useState<string | null>(null); // 아래 목록에서 고른 시간대(없으면 지금 시간대)
   const dueNow = ordered.find((s) => stateOf(s) === 'now');
   const nextLater = slots.filter((s) => stateOf(s) === 'later').sort((a, b) => at(a) - at(b))[0];
+  const focus = ordered.find((s) => s.id === pick) ?? dueNow ?? nextLater ?? ordered[0];
+  const nowCount = slots.reduce((n, s) => n + (stateOf(s) === 'now' ? s.items.filter((i) => !i.done).length : 0), 0);
   const hint = dueNow ? `지금 ${dueNow.label} 약 드실 시간이에요` : nextLater ? `다음은 ${nextLater.label} ${timeText(nextLater)}이에요` : '';
   const total = slots.reduce((n, s) => n + s.items.length, 0);
   const doneN = slots.reduce((n, s) => n + s.items.filter((i) => i.done).length, 0);
@@ -83,122 +86,151 @@ export default function Home() {
   useSettings(); // 시각 표시(12·24시간)를 바꾸면 다시 그린다
   const clock = fmtTime(now.getHours(), now.getMinutes());
 
+  const curLabel = slots.find((x) => x.id === curId)?.label;
+  const fst = focus ? stateOf(focus) : 'done';
+  const fNow = fst === 'now';
+  const bigText = !focus ? '' : fst === 'done' ? `${focus.label} 약을 다 드셨어요` : fNow ? `${focus.label} 약 드실 시간이에요` : `${focus.label} 약은 ${timeText(focus)}이에요`;
+  const others = ordered.filter((s) => s.id !== focus?.id);
+
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.wrap} showsVerticalScrollIndicator={false}>
-        <TabTitle
-          title="홈"
-          right={
-            <Pressable accessibilityRole="button" accessibilityLabel="설정" onPress={() => router.push('/more')} style={({ pressed }) => [styles.gear, pressed && { opacity: 0.6 }]}>
-              <Icon name="settings" size={28} color={C.primary} />
-            </Pressable>
-          }
-        />
+        <View style={styles.header}>
+          <View style={styles.top}>
+            <View style={styles.dateGroup}>
+              <Text style={styles.dateBig}>{dateText}</Text>
+              <View style={styles.weekBadge}>
+                <Text style={styles.weekText}>{weekday}</Text>
+              </View>
+            </View>
+            <View style={styles.timeBox}>
+              <Icon name="clock" size={20} color={C.primary} />
+              <Text style={styles.timeText}>{curLabel ? `${curLabel} ${clock}` : clock}</Text>
+            </View>
+          </View>
+          <TabTitle
+            title="홈"
+            right={
+              <Pressable accessibilityRole="button" accessibilityLabel="설정" onPress={() => router.push('/more')} style={({ pressed }) => [styles.gear, pressed && { opacity: 0.6 }]}>
+                <Icon name="settings" size={22} color={C.primary} />
+              </Pressable>
+            }
+          />
+        </View>
 
         <AccountSwitch />
 
-        {/* 오늘 먹을 약 + 복용 진행도: 홈의 고유 구역(제목 막대 없음). 진행 카드 → 시간대 카드들 */}
-        <View style={styles.today}>
-          <View style={styles.status}>
-              <View style={styles.top}>
-                <View style={styles.dateGroup}>
-                  <Text style={styles.dateBig}>{dateText}</Text>
-                  <View style={styles.weekBadge}>
-                    <Text style={styles.weekText}>{weekday}</Text>
-                  </View>
-                </View>
-                <View style={styles.timeBox}>
-                  <Icon name="clock" size={20} color={C.primary} />
-                  <Text style={styles.timeText}>{clock}</Text>
-                </View>
-              </View>
-            <View style={styles.statusBody}>
-            <Text style={styles.statusText}>{summary}</Text>
-            {total > 0 && <PillGauge total={total} done={doneN} />}
-            {!!hint && <Text style={[styles.hint, !!dueNow && { color: C.orange }]}>{hint}</Text>}
-            </View>
+        {!slots.length && (
+          <View style={styles.empty}>
+            <Text style={styles.statusText}>오늘은 먹을 약이 없어요</Text>
+            <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />
           </View>
-          {!slots.length && <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />}
-        {ordered.map((s) => {
-          const st = stateOf(s);
-          const now = st === 'now';
-          return (
-            <Tint key={s.id} st={st} colors={SLOT_BG} style={styles.slot}>
+        )}
+
+        {/* 지금 시간대 카드: 시간대 이름표, 큰 안내, 오늘 진행(알약), 약 줄, 모두 먹었어요 */}
+        {!!focus && (
+          <Tint st={fst} colors={SLOT_BG} style={styles.slot}>
+            <View style={styles.slotTop}>
               <View style={styles.slotHead}>
-                <View style={styles.slotLeft}>
-                  <Tint st={st} colors={TAG_BG} style={styles.tag}>
-                    <FlipBadge slot={s.id} done={st === 'done'} doneColor={SLOT_CHIP.done} />
-                    <Text style={styles.tagText}>{s.label}</Text>
-                  </Tint>
-                  <Text numberOfLines={1} style={styles.slotTime}>{timeText(s)}</Text>
-                </View>
-                {/* 묶음이 둘 이상이고 아직 남았을 때만, 머리줄 오른쪽에 "모두 체크"(겹친 체크 아이콘). 카드 높이는 변하지 않는다 */}
-                {st !== 'done' && s.items.length > 1 && (
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${s.label} 약 모두 체크`} onPress={() => eatAll(s.id)} style={[styles.allBtn, now && styles.allNow]}>
-                    <Icon name="checks" size={22} color={now ? C.orange : C.primary} stroke={2.6} />
-                  </Pressable>
-                )}
+                <Tint st={fst} colors={TAG_BG} style={styles.tag}>
+                  <FlipBadge slot={focus.id} done={fst === 'done'} doneColor={SLOT_CHIP.done} />
+                  <Text style={styles.tagText}>{focus.label}</Text>
+                </Tint>
+                <Text numberOfLines={1} style={styles.slotTime}>{timeText(focus)}</Text>
               </View>
+              <Text style={styles.bigText}>{bigText}</Text>
+              <Text style={styles.count}>{total > 0 && pending.length ? <>오늘 {total}개 중 <Text style={styles.countOn}>{doneN}개</Text> 먹었어요</> : summary}</Text>
+              {total > 0 && <PillGauge total={total} done={doneN} now={nowCount} />}
+            </View>
 
-              {/* 처방 묶음은 카드 하나 안에 줄로 나열하고 가는 선으로만 나눈다 (카드 안의 카드를 없앰) */}
-              <View style={styles.rows}>
-                {s.items.map(({ plan, done }, idx) => {
-                  const k = `${s.id}:${plan.id}`;
-                  return (
-                    <View key={plan.id} style={styles.row}>
-                      <View style={styles.itemRow}>
-                        <Pressable
-                          accessibilityRole="checkbox"
-                          accessibilityState={{ checked: done }}
-                          accessibilityLabel={`${s.label} ${planTitle(plan)}`}
-                          onPress={() => eat(s.id, plan, done)}
-                          style={({ pressed }) => [styles.check, pressed && { opacity: 0.8 }]}
-                        >
-                          <CheckBox done={done} warn={now} delay={idx * 80} />
-                          <View style={{ flex: 1, gap: 4 }}>
-                            <View style={styles.titleLine}>
-                              <Text style={[styles.itemName, done && { color: C.sub }]}>{planTitle(plan)}</Text>
-                              <Chip small text={`약 ${plan.drugs.length}가지`} />
-                            </View>
-                            <Text numberOfLines={1} style={styles.itemSub}>{plan.drugs.join(', ')}</Text>
-                            {plan.guess && <Text style={styles.guess}>병명은 AI 짐작</Text>}
-                          </View>
-                        </Pressable>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={openItem[k] ? '약 목록 접기' : `약 ${plan.drugs.length}가지 보기`}
-                          onPress={() => setOpenItem((o) => ({ ...o, [k]: !o[k] }))}
-                          style={styles.expand}
-                        >
-                          <Icon name={openItem[k] ? 'up' : 'down'} size={24} color={C.primary} />
-                        </Pressable>
+            {focus.items.map(({ plan, done }, idx) => {
+              const k = `${focus.id}:${plan.id}`;
+              return (
+                <View key={plan.id} style={styles.row}>
+                  <View style={styles.itemRow}>
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: done }}
+                      accessibilityLabel={`${focus.label} ${planTitle(plan)}`}
+                      onPress={() => eat(focus.id, plan, done)}
+                      style={({ pressed }) => [styles.check, pressed && { opacity: 0.8 }]}
+                    >
+                      <CheckBox done={done} warn={fNow} delay={idx * 80} />
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <View style={styles.titleLine}>
+                          <Text style={[styles.itemName, done && { color: C.sub }]}>{planTitle(plan)}</Text>
+                          <Chip small text={`약 ${plan.drugs.length}가지`} />
+                        </View>
+                        <Text numberOfLines={1} style={styles.itemSub}>{plan.drugs.join(', ')}</Text>
                       </View>
-                      {!!openItem[k] &&
-                        plan.drugs.map((name) => {
-                          const di = plan.info?.find((d) => d.name === name);
-                          const effect = di?.effect;
-                          return (
-                            <View key={name} style={styles.drugRow}>
-                              <View style={styles.titleLine}>
-                                <Text style={styles.drugName}>{name}</Text>
-                                {!!di?.dose && <Chip small text={`1회 ${di.dose}`} />}
-                              </View>
-                              {!!effect && <Text style={styles.itemSub}>{effect}</Text>}
-                            </View>
-                          );
-                        })}
-                    </View>
-                  );
-                })}
-              </View>
-            </Tint>
-          );
-        })}
-        </View>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={openItem[k] ? '약 목록 접기' : `약 ${plan.drugs.length}가지 보기`}
+                      onPress={() => setOpenItem((o) => ({ ...o, [k]: !o[k] }))}
+                      style={styles.expand}
+                    >
+                      <Icon name={openItem[k] ? 'up' : 'down'} size={22} color={C.primary} />
+                    </Pressable>
+                  </View>
+                  {!!openItem[k] &&
+                    plan.drugs.map((name) => {
+                      const di = plan.info?.find((d) => d.name === name);
+                      return (
+                        <View key={name} style={styles.drugRow}>
+                          <View style={styles.titleLine}>
+                            <Text style={styles.drugName}>{name}</Text>
+                            {!!di?.dose && <Chip small white text={`1회 ${di.dose}`} />}
+                          </View>
+                          {!!di?.effect && <Text style={styles.itemSub}>{di.effect}</Text>}
+                        </View>
+                      );
+                    })}
+                </View>
+              );
+            })}
 
-        <Section icon="calendar" title="캘린더">
-          <CalendarView mode="week" />
-        </Section>
+            {fst !== 'done' && focus.items.length > 0 && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => eatAll(focus.id)}
+                style={({ pressed }) => [styles.allBtn, { backgroundColor: fNow ? C.orange : C.primary }, pressed && { opacity: 0.85 }]}
+              >
+                <Icon name="check" size={24} color="#fff" stroke={2.6} />
+                <Text style={styles.allText}>{focus.label} 약 모두 먹었어요</Text>
+              </Pressable>
+            )}
+          </Tint>
+        )}
+
+        {others.length > 0 && (
+          <Section icon="pill" title="오늘 남은 약">
+            {others.map((s) => {
+              const done = stateOf(s) === 'done';
+              return (
+                <Pressable
+                  key={s.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${s.label} 약 보기`}
+                  onPress={() => setPick(s.id)}
+                  style={({ pressed }) => [styles.other, done ? { backgroundColor: C.done } : styles.otherLater, pressed && { opacity: 0.8 }]}
+                >
+                  <View style={[styles.otherIcon, done && { backgroundColor: SLOT_CHIP.done }]}>
+                    {done ? <Icon name="check" size={24} color="#fff" stroke={3} /> : <SlotIcon slot={s.id} size={28} />}
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <View style={styles.titleLine}>
+                      <Text style={[styles.itemName, done && { color: '#2F5A43' }]}>{s.label}</Text>
+                      <Text style={styles.otherTime}>{timeText(s)}</Text>
+                    </View>
+                    <Text style={styles.itemSub} numberOfLines={1}>{done ? `${s.items.length}개 모두 먹었어요` : s.items.map(({ plan }) => planTitle(plan)).join(', ')}</Text>
+                  </View>
+                  <Icon name="right" size={24} color={C.primary} stroke={2.4} />
+                </Pressable>
+              );
+            })}
+          </Section>
+        )}
 
         <HomeSummary />
 
@@ -210,65 +242,45 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 102, gap: 16 }, // 구역 사이는 Section이 8을 더해 24, 제목 줄과 첫 구역은 바로 붙는다
-  date: { fontSize: 18, color: C.sub },
-  gear: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  // 날짜 | 요일 | 시각: 진행 카드 맨 위에 같은 폭의 세 칸으로 나눠 놓는다
-  // 진행 카드 맨 위 한 줄: 왼쪽 날짜 + 요일 단추, 오른쪽 시각
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 56, paddingHorizontal: S.item, backgroundColor: C.fill, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
+  safe: { flex: 1, backgroundColor: C.page },
+  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 16, paddingBottom: 168, gap: 28 }, // 구역 사이 28, 아래는 ChatFab·탭바에 가리지 않게 여유
+  header: { gap: 8 }, // 날짜 줄과 제목 줄 사이 8, 제목 줄과 첫 카드 사이는 구역 간격 28 (시안 그대로)
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dateGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dateBig: { fontSize: 22, fontWeight: '800', color: C.text },
-  weekBadge: { borderRadius: 14, backgroundColor: C.primary, paddingHorizontal: 12, paddingVertical: 3 },
+  weekBadge: { borderRadius: 14, backgroundColor: C.primary, paddingHorizontal: 10, paddingVertical: 3 },
   weekText: { fontSize: 16, fontWeight: '800', color: '#fff' },
-  timeBox: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 20, backgroundColor: '#fff', paddingHorizontal: 14, minHeight: 40 },
+  timeBox: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 20, backgroundColor: C.fill, paddingHorizontal: 14, minHeight: 40 },
   timeText: { fontSize: 20, fontWeight: '800', color: C.primary },
-  status: { ...CARD },
-  statusBody: { padding: S.pad, gap: S.in }, // 날짜·시각 줄(위)과 본 요소(아래)를 나눈다
-  hint: { fontSize: 18, fontWeight: '800', color: C.sub },
-  nowRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  now: { fontSize: 18, fontWeight: '700', color: C.sub },
+  gear: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  empty: { ...CARD, padding: S.pad, gap: S.gap },
   statusText: { fontSize: 22, lineHeight: 32, fontWeight: '800', color: C.text },
-  bar: { height: 12, borderRadius: 8, backgroundColor: C.soft, overflow: 'hidden' },
-  barFill: { height: 12, borderRadius: 8, backgroundColor: C.primary },
-  count: { fontSize: 18, color: C.sub },
-  // 시간대 하나 = 연한 큰 카드 안에 머리줄(아이콘·이름·시각·상태)과 약 묶음 카드들
-  slot: { gap: S.in, borderRadius: R.card, padding: S.in },
-  // 시간대 이름표: 색을 꽉 채운 둥근 상자 안에 둥근 흰 원(그림)과 이름
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 28, padding: 5, paddingRight: 16 },
-  tagIcon: { width: 36, height: 36, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  tagText: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  slotHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  slotLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
-  slotTime: { flexShrink: 0, fontSize: 16, color: C.sub },
-  slotName: { fontSize: 20, fontWeight: '800', color: C.text, flexShrink: 1 },
-  chip: { flexShrink: 0, fontSize: 16, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, overflow: 'hidden' },
-  // 모두 체크: 약 줄의 체크칸처럼 속이 빈 동그라미(굵은 테두리) 안에 겹친 체크 아이콘
-  allBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: C.border, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  allNow: { borderColor: C.orange },
-  chipDone: { backgroundColor: '#4F7A60', color: '#fff' },
-  chipLate: { backgroundColor: C.orange, color: '#fff' },
-  rows: { gap: 8 },
-  row: { backgroundColor: '#fff', borderRadius: R.card, padding: S.item, gap: S.in },
+  // 지금 시간대 카드 (산호 바탕 큰 카드)
+  slot: { gap: 14, borderRadius: 24, padding: 14, paddingTop: 20 },
+  slotTop: { gap: 10, paddingHorizontal: 6 },
+  slotHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 32, padding: 6, paddingRight: 22 },
+  tagText: { fontSize: 24, fontWeight: '900', color: '#fff' },
+  slotTime: { flexShrink: 1, fontSize: 18, fontWeight: '700', color: C.sub },
+  bigText: { fontSize: 26, lineHeight: 36, fontWeight: '900', letterSpacing: -0.5, color: C.text },
+  countOn: { fontWeight: '900', color: C.primary },
+  count: { fontSize: 18, fontWeight: '700', color: C.text },
+  row: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 12, paddingLeft: 14, paddingRight: 12, gap: S.in },
   titleLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  check: { flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 16 },
-  expand: { width: 44, height: 44, borderRadius: 24, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  check: { flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  expand: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   drugRow: { backgroundColor: C.soft, borderRadius: 12, padding: S.in, gap: S.tight },
   drugName: { fontSize: 18, lineHeight: 28, fontWeight: '700', color: C.text },
-  box: { width: 40, height: 40, borderRadius: 12, borderWidth: 3, borderColor: C.border, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
-  boxDone: { backgroundColor: C.primary, borderColor: C.primary },
   itemName: { fontSize: 20, lineHeight: 28, fontWeight: '800', color: C.text },
   guess: { fontSize: 16, color: C.orange },
-  itemSub: { fontSize: 18, color: C.sub },
-  // 홈은 두 구역: 오늘 먹을 약(체크리스트) / 캘린더. 구역마다 제목을 달고, 둘 사이는 줄과 넓은 간격으로 나눈다.
-  part: { gap: S.gap },
-  today: { gap: S.in }, // 오늘 먹을 약은 홈의 고유 구역이라 제목 막대 없이 홈 제목 바로 아래에 둔다
-  partTitle: { fontSize: 22, fontWeight: '800', color: C.text },
-  calPart: { gap: S.gap },
-  // 구역 제목은 카드가 아니라 "선 — 아이콘·제목 — 선" 구분자: 카드(네모 상자)와 모양이 달라 한눈에 구역이 나뉜다
-  band: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rule: { flex: 1, height: 2, borderRadius: 1, backgroundColor: C.mist },
-  bandText: { fontSize: 22, fontWeight: '800', color: C.primary },
+  itemSub: { fontSize: 16, color: C.sub },
+  allBtn: { minHeight: 56, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16 },
+  allText: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  // 오늘 남은 약: 다른 시간대를 한 줄씩
+  other: { minHeight: 72, borderRadius: 18, paddingVertical: 12, paddingLeft: 14, paddingRight: 12, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  otherLater: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line },
+  otherIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  otherTime: { fontSize: 16, fontWeight: '500', color: C.sub },
   offline: { fontSize: 16, textAlign: 'center', color: C.red },
 });

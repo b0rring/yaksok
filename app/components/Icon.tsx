@@ -1,4 +1,4 @@
-import { Ban, ChevronLeft, ChevronRight, CheckCheck, Search, Sparkles, X, CalendarDays, Camera, Check, ChevronDown, ChevronUp, Clock, FileText, House, MessageCircle, MapPin, Mic, Minus, SendHorizontal, Pencil, Pill, Plus, Settings, Square, Sun, Sunrise, Sunset, TriangleAlert, Users, Volume2 } from 'lucide-react-native';
+import { Hospital as HospitalIcon, Package, User, ClipboardPlus, Image as ImageIcon, Bookmark, Heart, Megaphone, PenLine, Stethoscope, BadgeCheck, Ban, Info, LocateFixed, Navigation, Phone, ChevronLeft, ChevronRight, CheckCheck, Search, Sparkles, X, CalendarDays, Camera, Check, ChevronDown, ChevronUp, Clock, FileText, House, MessageCircle, MapPin, Mic, Minus, SendHorizontal, Pencil, Pill, Plus, Settings, Square, Sun, Sunrise, Sunset, TriangleAlert, Users, Volume2 } from 'lucide-react-native';
 
 // 앱 전체에서 쓰는 선(flat) 아이콘. 이모지 대신 이것만 쓴다.
 const ICONS = {
@@ -9,7 +9,7 @@ const ICONS = {
   calendar: CalendarDays,
   settings: Settings,
   send: SendHorizontal,
-  hospital: MapPin, // 병원 탭은 위치로 찾는 기능이라 지도 핀
+  hospital: HospitalIcon, // 병원 탭·병원 찾기: 병원 건물 모양 (시안)
   note: FileText,
   check: Check,
   speaker: Volume2,
@@ -26,6 +26,20 @@ const ICONS = {
   search: Search,
   sparkles: Sparkles,
   close: X,
+  info: Info,
+  box: Package,
+  person: User,
+  record: ClipboardPlus,
+  image: ImageIcon,
+  heart: Heart,
+  bookmark: Bookmark,
+  pen: PenLine,
+  megaphone: Megaphone,
+  doctor: Stethoscope,
+  verified: BadgeCheck,
+  phone: Phone,
+  map: Navigation,
+  locate: LocateFixed,
   left: ChevronLeft,
   right: ChevronRight,
   down: ChevronDown,
@@ -36,7 +50,7 @@ const ICONS = {
 };
 export type IconName = keyof typeof ICONS;
 
-export default function Icon({ name, size = 24, color = '#1E2A25', stroke = 2 }: { name: IconName; size?: number; color?: string; stroke?: number }) {
+export default function Icon({ name, size = 24, color = '#1E2A25', stroke = 2, fill }: { name: IconName; size?: number; color?: string; stroke?: number; fill?: string }) {
   const Glyph = ICONS[name];
-  return <Glyph size={size} color={color} strokeWidth={stroke} />;
+  return <Glyph size={size} color={color} strokeWidth={stroke} fill={fill ?? 'none'} />;
 }

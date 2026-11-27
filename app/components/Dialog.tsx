@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '800', color: C.text, lineHeight: 28 },
   message: { fontSize: 18, lineHeight: 28, color: C.sub },
   actions: { gap: 12, marginTop: 12 },
-  btn: { minHeight: 56, borderRadius: R.ctl, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  btn: { minHeight: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   secondary: { backgroundColor: C.fill },
   btnText: { fontSize: 20, fontWeight: '800', color: '#fff' },
 });

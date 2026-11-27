@@ -19,24 +19,25 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        sceneStyle: { backgroundColor: C.bg },
+        sceneStyle: { backgroundColor: C.page },
         animation: 'fade', // 탭을 옮길 때 화면이 살짝 부드럽게 바뀐다
         headerTitleStyle: { fontSize: 20, fontWeight: '800', color: C.text },
-        headerStyle: { backgroundColor: C.bg },
+        headerStyle: { backgroundColor: C.page },
         headerShadowVisible: false,
         tabBarActiveTintColor: C.primary,
         tabBarInactiveTintColor: C.sub,
         tabBarStyle: {
-          height: 84,
-          paddingTop: 8,
+          height: 92,
+          paddingTop: 10,
+          paddingHorizontal: 2,
           backgroundColor: C.card,
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
-          borderWidth: 1.5,
-          borderBottomWidth: 0,
-          borderColor: C.mist,
-          shadowOpacity: 0, // 그림자가 모서리에서 회색으로 보여서 쓰지 않는다
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          borderTopWidth: 1,
+          borderColor: C.line,
+          shadowOpacity: 0,
           elevation: 0,
+          zIndex: 2, // 지도·내용에 가려지지 않게
         },
         tabBarItemStyle: { paddingHorizontal: 0 },
       }}
@@ -49,26 +50,23 @@ export default function TabsLayout() {
             title: t.label,
             headerTitle: t.header,
             headerShown: !!t.header,
-            // 지금 보는 탭: 라벨 아래 작은 점(캘린더의 점처럼), 아이콘은 굵게, 글자는 굵은 글씨 (색만 바꾸면 눈에 안 띈다)
+            // 지금 보는 탭: 아이콘 뒤에 48×32 둥근 연초록 바탕 + 굵은 아이콘·글자
             tabBarIcon: ({ color, focused }) => (
-              <View style={styles.iconWrap}>
-                <Icon name={t.icon} size={25} color={String(color)} stroke={focused ? 2.6 : 1.9} />
+              <View style={[styles.iconWrap, focused && styles.iconOn]}>
+                <Icon name={t.icon} size={24} color={String(color)} stroke={focused ? 2.6 : 2} />
               </View>
             ),
             tabBarLabel: ({ color, focused }) => (
-              <View style={styles.labelBox}>
-                <Text numberOfLines={1} style={[styles.label, { color: String(color) }, focused && styles.labelOn]}>
-                  {t.label}
-                </Text>
-                <View style={[styles.dot, focused && styles.dotOn]} />
-              </View>
+              <Text style={[styles.label, { color: String(color) }, focused && styles.labelOn]}>
+                {t.label}
+              </Text>
             ),
             // 가운데 카메라 버튼: 탭 줄 위로 솟은 둥근 남색 버튼
             ...(t.name === 'scan' && {
               tabBarButton: (p) => (
                 <View style={styles.fabSlot}>
                   <Pressable accessibilityRole="button" accessibilityLabel="약 찍기" onPress={p.onPress} style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}>
-                    <Icon name="camera" size={30} color="#fff" />
+                    <Icon name="camera" size={28} color="#fff" />
                   </Pressable>
                 </View>
               ),
@@ -81,18 +79,16 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  iconWrap: { width: 48, height: 32, alignItems: 'center', justifyContent: 'center' },
-  labelBox: { alignItems: 'center', gap: 3 },
-  dot: { width: 8, height: 8, borderRadius: 3, backgroundColor: 'transparent' },
-  dotOn: { backgroundColor: C.primary },
-  label: { fontSize: 14, fontWeight: '600', flexShrink: 0, minWidth: 64, textAlign: 'center' },
+  iconWrap: { width: 48, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  iconOn: { backgroundColor: C.fill },
+  label: { width: 64, marginHorizontal: -4, fontSize: 14, fontWeight: '600', letterSpacing: -0.3, textAlign: 'center' }, // 칸(390÷7=55)보다 글이 넓어도 잘리지 않게
   labelOn: { fontWeight: '900' },
-  fabSlot: { flex: 1, alignItems: 'center' },
+  fabSlot: { flex: 1, alignItems: 'center', zIndex: 1 },
   fab: {
-    marginTop: -26,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    marginTop: -28,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -100,8 +96,9 @@ const styles = StyleSheet.create({
     borderColor: C.bg,
     shadowColor: C.primary,
     shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
+    zIndex: 1,
   },
 });

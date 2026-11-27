@@ -17,7 +17,9 @@ export default function Drugs() {
       <ScrollView contentContainerStyle={styles.wrap} showsVerticalScrollIndicator={false}>
         <TabTitle title="내 약" />
         {all.length ? (
-          <PlanList all={all} reload={reload} />
+          <View style={{ marginTop: -12 }}>
+            <PlanList all={all} reload={reload} />
+          </View>
         ) : (
           <View style={{ gap: S.gap }}>
             <Text style={styles.empty}>아직 등록한 약이 없어요</Text>
@@ -30,7 +32,7 @@ export default function Drugs() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  wrap: { paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 102, gap: S.section },
+  safe: { flex: 1, backgroundColor: C.page },
+  wrap: { paddingHorizontal: S.page, paddingTop: 16, paddingBottom: 102, gap: S.section },
   empty: { fontSize: 20, color: C.sub, textAlign: 'center', marginTop: 20 },
 });

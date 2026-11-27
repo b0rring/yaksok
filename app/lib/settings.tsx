@@ -17,8 +17,8 @@ export const RATES = [
   { id: 1, label: '보통' },
 ] as const;
 
-type Settings = { scale: number; rate: number; clock: number };
-const DEFAULT: Settings = { scale: 1, rate: 0.85, clock: 12 };
+type Settings = { scale: number; rate: number; clock: number; alarm: boolean };
+const DEFAULT: Settings = { scale: 1, rate: 0.85, clock: 12, alarm: true };
 const KEY = 'settings';
 
 const Ctx = createContext<Settings & { set: (s: Partial<Settings>) => void }>({ ...DEFAULT, set: () => {} });
