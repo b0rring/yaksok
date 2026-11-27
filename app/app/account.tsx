@@ -1,21 +1,18 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from '../components/AppText';
 import BigButton from '../components/BigButton';
 import Chip from '../components/Chip';
-import { useDialog } from '../components/Dialog';
-import { ApiError, Role, apiAddLink, apiLinks, apiRemoveLink } from '../lib/api';
+import { ApiError, Role } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { C, CARD, S } from '../lib/theme';
 
 export const ROLE_LABEL: Record<Role, string> = { patient: '환자 (약 드시는 분)', guardian: '보호자', doctor: '의사' };
 
-// 내 계정: 로그인·가입, 내 고유 코드, 보호자 연동. 로그인은 선택이다 (안 해도 약 관리는 기기 안에서 된다).
+// 내 계정: 로그인·가입. 연결은 연동 계정 관리(links.tsx)에서 한다. 로그인은 선택이다 (안 해도 약 관리는 기기 안에서 된다).
 export default function Account() {
   const { user, token, login, signup, logout } = useAuth();
-  const ask = useDialog();
   const router = useRouter();
 
   // 로그아웃 상태: 로그인 / 가입
@@ -41,34 +38,6 @@ export default function Account() {
       setBusy(false);
     }
   };
-
-  // 로그인 상태: 연결된 사람 목록
-  const [links, setLinks] = useState<{ patients: { id: number; name: string }[]; guardians: { id: number; name: string }[] }>({ patients: [], guardians: [] });
-  const [code, setCode] = useState('');
-  const load = useCallback(() => {
-    if (token) apiLinks(token).then(setLinks).catch(() => {});
-  }, [token]);
-  useFocusEffect(load);
-
-  const connect = async () => {
-    try {
-      const p = await apiAddLink(token!, code);
-      setCode('');
-      load();
-      ask({ title: '연결했어요', message: `${p.name}님의 약을 볼 수 있어요.` });
-    } catch (e) {
-      ask({ title: '연결하지 못했어요', message: e instanceof ApiError ? e.message : '다시 해 주세요.' });
-    }
-  };
-  const cut = (id: number, who: string) =>
-    ask({
-      title: '연결을 끊을까요?',
-      message: `${who}님과의 연결을 끊어요.`,
-      actions: [
-        { label: '끊기', kind: 'danger', onPress: () => apiRemoveLink(token!, id).then(load).catch(() => {}) },
-        { label: '그대로 두기', kind: 'secondary' },
-      ],
-    });
 
   if (!user)
     return (
@@ -116,47 +85,8 @@ export default function Account() {
           <Text style={styles.sub}>아이디 {user.login_id}</Text>
         </View>
 
-        {user.role === 'patient' && (
-          <>
-            <View style={styles.card}>
-              <Text style={styles.label}>내 고유 코드</Text>
-              <Text style={styles.code}>{user.code}</Text>
-              <Text style={styles.sub}>보호자에게 이 코드를 알려 주면, 보호자가 내 약 기록을 볼 수 있어요.</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.label}>연결된 보호자</Text>
-              {!links.guardians.length && <Text style={styles.sub}>아직 없어요</Text>}
-              {links.guardians.map((g) => (
-                <View key={g.id} style={styles.rowBetween}>
-                  <Text style={styles.person}>{g.name}</Text>
-                  <View style={{ width: 110 }}><BigButton label="끊기" variant="secondary" onPress={() => cut(g.id, g.name)} /></View>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {user.role === 'guardian' && (
-          <>
-            <View style={styles.card}>
-              <Text style={styles.label}>환자 코드로 연결하기</Text>
-              <TextInput value={code} onChangeText={setCode} autoCapitalize="characters" autoCorrect={false} maxLength={6} placeholder="6자리 코드" placeholderTextColor={C.gray} style={[styles.input, styles.codeInput]} />
-              <BigButton label="연결하기" onPress={connect} />
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.label}>연결된 환자</Text>
-              {!links.patients.length && <Text style={styles.sub}>아직 없어요</Text>}
-              {links.patients.map((p) => (
-                <View key={p.id} style={styles.patient}>
-                  <Text style={styles.person}>{p.name}</Text>
-                  <View style={styles.pair}>
-                    <View style={{ flex: 1 }}><BigButton label="약 보기" onPress={() => router.push({ pathname: '/patient', params: { id: String(p.id) } })} /></View>
-                    <View style={{ flex: 1 }}><BigButton label="끊기" variant="secondary" onPress={() => cut(p.id, p.name)} /></View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </>
+        {(user.role === 'patient' || user.role === 'guardian') && (
+          <BigButton label="연동 계정 관리" onPress={() => router.push('/links')} />
         )}
 
         {user.role === 'doctor' && (

@@ -47,7 +47,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
                       pressed && { opacity: 0.85 },
                     ]}
                   >
-                    <Text style={[styles.btnText, kind === 'secondary' && { color: C.text }]}>{a.label}</Text>
+                    <Text style={[styles.btnText, kind === 'secondary' && { color: C.primary }]}>{a.label}</Text>
                   </Pressable>
                 );
               })}
@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
   message: { fontSize: 18, lineHeight: 28, color: C.sub },
   actions: { gap: 12, marginTop: 12 },
   btn: { minHeight: 56, borderRadius: R.ctl, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
-  secondary: { backgroundColor: C.soft, borderWidth: 1.5, borderColor: C.border },
+  secondary: { backgroundColor: C.fill },
   btnText: { fontSize: 20, fontWeight: '800', color: '#fff' },
 });

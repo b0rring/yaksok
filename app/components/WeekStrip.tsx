@@ -26,7 +26,7 @@ function Dots({ kinds, on }: { kinds: Kind[]; on?: boolean }) {
 }
 
 // 한 주(일~토) 줄: 캘린더 탭과 홈 아래 간단 캘린더가 함께 쓴다. sel 날짜는 남색으로 채운다.
-export default function WeekStrip({ days, dots, sel, onSelect }: { days: string[]; dots: Record<string, Kind[]>; sel: string; onSelect: (d: string) => void }) {
+export default function WeekStrip({ days, dots, sel, onSelect, white }: { days: string[]; dots: Record<string, Kind[]>; sel: string; onSelect: (d: string) => void; white?: boolean }) {
   return (
     <View style={styles.strip}>
       {days.map((d) => {
@@ -37,7 +37,7 @@ export default function WeekStrip({ days, dots, sel, onSelect }: { days: string[
             key={d}
             accessibilityLabel={`${dt.getMonth() + 1}월 ${dt.getDate()}일`}
             onPress={() => onSelect(d)}
-            style={[styles.dayCell, on && styles.dayOn]}
+            style={[styles.dayCell, white && { backgroundColor: '#fff' }, on && styles.dayOn]}
           >
             <Text style={[styles.dayWeek, on && { color: '#fff' }]}>{WEEK[dt.getDay()]}</Text>
             <Text style={[styles.dayNum, on && { color: '#fff' }]}>{dt.getDate()}</Text>
@@ -51,8 +51,8 @@ export default function WeekStrip({ days, dots, sel, onSelect }: { days: string[
 
 const styles = StyleSheet.create({
   strip: { flexDirection: 'row', gap: 5 },
-  dayCell: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 16, gap: 4, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.mist },
-  dayOn: { backgroundColor: C.primary, borderColor: C.primary },
+  dayCell: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 16, gap: 4, backgroundColor: C.fill },
+  dayOn: { backgroundColor: C.primary },
   dayWeek: { fontSize: 16, fontWeight: '700', color: C.sub },
   dayNum: { fontSize: 22, fontWeight: '800', color: C.text },
   dots: { height: 12, flexDirection: 'row', gap: 4, alignItems: 'center' },

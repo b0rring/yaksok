@@ -7,17 +7,19 @@ import Icon from './Icon';
 import MonthGrid, { DOT_COLOR } from './MonthGrid';
 import WeekStrip from './WeekStrip';
 import { useCalendarData } from '../lib/calendarData';
-import { SLOTS, addDays, didTake, planEnd, planTitle, today } from '../lib/store';
+import { useSettings } from '../lib/settings';
+import { SLOTS, addDays, fmtTime, didTake, planEnd, planTitle, today } from '../lib/store';
 import { C, CARD, R, S } from '../lib/theme';
 
 const WEEKDAY = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 const pad = (n: number) => String(n).padStart(2, '0');
 const toDate = (s: string) => new Date(`${s}T00:00:00`);
-const timeText = (h: number, m: number) => `${h % 12 || 12}:${pad(m)}`;
+const timeText = fmtTime;
 
 // 캘린더 본문(날짜 줄 + 고른 날의 타임라인). 홈 아래에는 주간(week), 캘린더 탭에는 월간(month)으로 넣는다.
 export default function CalendarView({ mode }: { mode: 'week' | 'month' }) {
   const router = useRouter();
+  useSettings(); // 시각 표시를 바꾸면 다시 그린다
   const t = today();
   const [sel, setSel] = useState(t);
   const month = mode === 'month';
@@ -56,21 +58,21 @@ export default function CalendarView({ mode }: { mode: 'week' | 'month' }) {
           {month ? (
             <View style={styles.titleRow}>
               <Pressable accessibilityLabel="이전 달" onPress={() => goMonth(-1)} hitSlop={8} style={styles.arrow}>
-                <Text style={styles.arrowText}>‹</Text>
+                <Icon name="left" size={24} color={C.primary} />
               </Pressable>
-              <Chip text={`${ym.y}년 ${ym.m + 1}월`} />
+              <Chip big text={`${ym.y}년 ${ym.m + 1}월`} />
               <Pressable accessibilityLabel="다음 달" onPress={() => goMonth(1)} hitSlop={8} style={styles.arrow}>
-                <Text style={styles.arrowText}>›</Text>
+                <Icon name="right" size={24} color={C.primary} />
               </Pressable>
             </View>
           ) : (
             <View style={styles.titleRow}>
               <Pressable accessibilityLabel="지난주" onPress={() => setSel(addDays(sel, -7))} hitSlop={8} style={styles.arrow}>
-                <Text style={styles.arrowText}>‹</Text>
+                <Icon name="left" size={24} color={C.primary} />
               </Pressable>
-              <Chip text={`${selD.getMonth() + 1}월 ${weekNo}주차`} />
+              <Chip big text={`${selD.getMonth() + 1}월 ${weekNo}주차`} />
               <Pressable accessibilityLabel="다음주" onPress={() => setSel(addDays(sel, 7))} hitSlop={8} style={styles.arrow}>
-                <Text style={styles.arrowText}>›</Text>
+                <Icon name="right" size={24} color={C.primary} />
               </Pressable>
             </View>
           )}
@@ -162,9 +164,9 @@ export default function CalendarView({ mode }: { mode: 'week' | 'month' }) {
 const NODE = 28;
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  titleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
   title: { fontSize: 20, fontWeight: '800', color: C.text },
-  arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  arrow: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
   arrowText: { fontSize: 26, lineHeight: 32, fontWeight: '700', color: C.sub },
   card: { ...CARD, padding: S.pad, gap: S.in },
   legend: { flexDirection: 'row', justifyContent: 'center', gap: 16, paddingTop: 4 },

@@ -1,4 +1,4 @@
-import { Ban, CheckCheck, Search, Sparkles, X, CalendarDays, Camera, Check, ChevronDown, ChevronUp, Clock, FileText, House, MessageCircle, Mic, Minus, Pencil, Pill, Plus, Settings, Square, SquarePlus, Sun, Sunrise, Sunset, TriangleAlert, Users, Volume2 } from 'lucide-react-native';
+import { Ban, ChevronLeft, ChevronRight, CheckCheck, Search, Sparkles, X, CalendarDays, Camera, Check, ChevronDown, ChevronUp, Clock, FileText, House, MessageCircle, MapPin, Mic, Minus, SendHorizontal, Pencil, Pill, Plus, Settings, Square, Sun, Sunrise, Sunset, TriangleAlert, Users, Volume2 } from 'lucide-react-native';
 
 // 앱 전체에서 쓰는 선(flat) 아이콘. 이모지 대신 이것만 쓴다.
 const ICONS = {
@@ -8,7 +8,8 @@ const ICONS = {
   mic: Mic,
   calendar: CalendarDays,
   settings: Settings,
-  hospital: SquarePlus,
+  send: SendHorizontal,
+  hospital: MapPin, // 병원 탭은 위치로 찾는 기능이라 지도 핀
   note: FileText,
   check: Check,
   speaker: Volume2,
@@ -25,6 +26,8 @@ const ICONS = {
   search: Search,
   sparkles: Sparkles,
   close: X,
+  left: ChevronLeft,
+  right: ChevronRight,
   down: ChevronDown,
   up: ChevronUp,
   sunrise: Sunrise,

@@ -4,14 +4,18 @@ import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { Text } from '../../components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BigButton from '../../components/BigButton';
-import Chip, { SplitChip } from '../../components/Chip';
+import Chip from '../../components/Chip';
+import Section from '../../components/Section';
+import HomeSummary from '../../components/HomeSummary';
+import AccountSwitch from '../../components/AccountSwitch';
 import TabTitle from '../../components/TabTitle';
 import ChatFab from '../../components/ChatFab';
 import CalendarView from '../../components/CalendarView';
 import Icon from '../../components/Icon';
 import { CheckBox, FlipBadge, PillGauge } from '../../components/Motion';
 import { getHealth } from '../../lib/api';
-import { planTitle, timeText, today } from '../../lib/store';
+import { useSettings } from '../../lib/settings';
+import { fmtTime, planTitle, timeText, today } from '../../lib/store';
 import { C, CARD, R, S } from '../../lib/theme';
 import { useTodayMeds } from '../../lib/useTodayMeds';
 
@@ -29,7 +33,6 @@ function Tint({ st, colors, style, children }: { st: 'now' | 'later' | 'done'; c
 }
 const SLOT_CHIP = { now: C.orange, later: '#5F7168', done: '#4F7A60' } as const;
 const TAG_BG: [string, string, string] = [SLOT_CHIP.now, SLOT_CHIP.later, SLOT_CHIP.done];
-const period = (h: number) => (h < 5 ? '새벽' : h < 11 ? '아침' : h < 17 ? '점심' : h < 21 ? '저녁' : '밤');
 
 // 홈 = 오늘의 약 체크리스트: 지금 시각과 "지금 뭘 해야 하는지" 한 줄, 그 아래 시간대별로 "무슨 병 약"을 체크한다.
 export default function Home() {
@@ -65,44 +68,57 @@ export default function Home() {
   // 순서: 지금 시간대(시각이 지난 것 중 가장 늦은 시간대)는 다 먹었어도 맨 위, 나머지는 아침·점심·저녁 시간 순
   const curId = slots.filter((s) => at(s) <= nowMin).sort((a, b) => at(b) - at(a))[0]?.id;
   const ordered = [...slots].sort((a, b) => (b.id === curId ? 1 : 0) - (a.id === curId ? 1 : 0) || at(a) - at(b));
+  const dueNow = ordered.find((s) => stateOf(s) === 'now');
+  const nextLater = slots.filter((s) => stateOf(s) === 'later').sort((a, b) => at(a) - at(b))[0];
+  const hint = dueNow ? `지금 ${dueNow.label} 약 드실 시간이에요` : nextLater ? `다음은 ${nextLater.label} ${timeText(nextLater)}이에요` : '';
   const total = slots.reduce((n, s) => n + s.items.length, 0);
   const doneN = slots.reduce((n, s) => n + s.items.filter((i) => i.done).length, 0);
   const summary = !slots.length ? '오늘은 먹을 약이 없어요' : !pending.length ? '오늘 약을 다 드셨어요' : `오늘 ${total}개 중 ${doneN}개 먹었어요`;
 
 
   const [y, m, d] = today().split('-').map(Number);
-  const dateText = `${m}월 ${d}일 ${'일월화수목금토'[new Date(y, m - 1, d).getDay()]}`;
+  const dateText = `${m}월 ${d}일`;
+  const weekday = `${'일월화수목금토'[new Date(y, m - 1, d).getDay()]}요일`;
   // 오전·오후 대신 시간대 이름(새벽·아침·점심·저녁·밤)을 시각 앞에 붙인다: 날짜와 시각이 한 덩어리
-  const clock = `${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')}`;
+  useSettings(); // 시각 표시(12·24시간)를 바꾸면 다시 그린다
+  const clock = fmtTime(now.getHours(), now.getMinutes());
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.wrap} showsVerticalScrollIndicator={false}>
         <TabTitle
           title="홈"
+          above={
+            <View style={styles.top}>
+              <View style={styles.dateGroup}>
+                <Text style={styles.dateBig}>{dateText}</Text>
+                <View style={styles.weekBadge}>
+                  <Text style={styles.weekText}>{weekday}</Text>
+                </View>
+              </View>
+              <View style={styles.timeBox}>
+                <Icon name="clock" size={20} color={C.primary} />
+                <Text style={styles.timeText}>{clock}</Text>
+              </View>
+            </View>
+          }
           right={
             <Pressable accessibilityRole="button" accessibilityLabel="설정" onPress={() => router.push('/more')} style={({ pressed }) => [styles.gear, pressed && { opacity: 0.6 }]}>
-              <Icon name="settings" size={22} color={C.sub} />
+              <Icon name="settings" size={28} color={C.primary} />
             </Pressable>
           }
         />
 
-        <View style={styles.status}>
-          <SplitChip parts={[dateText, `${period(now.getHours())} ${clock}`]} />
-          <Text style={styles.statusText}>{summary}</Text>
-          {total > 0 && <PillGauge total={total} done={doneN} />}
-        </View>
+        <AccountSwitch />
 
-        {!slots.length && <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />}
-
-        {slots.length > 0 && (
-          <View style={styles.part}>
-            <View style={styles.band}>
-              <View style={styles.rule} />
-              <Icon name="pill" size={22} color={C.primary} />
-              <Text style={styles.bandText}>오늘 먹을 약</Text>
-              <View style={styles.rule} />
-            </View>
+        {/* 오늘 먹을 약 + 복용 진행도: 한 구역 안에서 함께 본다 (진행 카드 → 시간대 카드들) */}
+        <Section flush icon="pill" title="오늘 먹을 약">
+          <View style={styles.status}>
+            <Text style={styles.statusText}>{summary}</Text>
+            {total > 0 && <PillGauge total={total} done={doneN} />}
+            {!!hint && <Text style={[styles.hint, !!dueNow && { color: C.orange }]}>{hint}</Text>}
+          </View>
+          {!slots.length && <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />}
         {ordered.map((s) => {
           const st = stateOf(s);
           const now = st === 'now';
@@ -129,7 +145,7 @@ export default function Home() {
                 {s.items.map(({ plan, done }, idx) => {
                   const k = `${s.id}:${plan.id}`;
                   return (
-                    <View key={plan.id} style={[styles.row, idx > 0 && styles.rowLine]}>
+                    <View key={plan.id} style={styles.row}>
                       <View style={styles.itemRow}>
                         <Pressable
                           accessibilityRole="checkbox"
@@ -159,10 +175,14 @@ export default function Home() {
                       </View>
                       {!!openItem[k] &&
                         plan.drugs.map((name) => {
-                          const effect = plan.info?.find((d) => d.name === name)?.effect;
+                          const di = plan.info?.find((d) => d.name === name);
+                          const effect = di?.effect;
                           return (
                             <View key={name} style={styles.drugRow}>
-                              <Text style={styles.drugName}>{name}</Text>
+                              <View style={styles.titleLine}>
+                                <Text style={styles.drugName}>{name}</Text>
+                                {!!di?.dose && <Chip small text={`1회 ${di.dose}`} />}
+                              </View>
                               {!!effect && <Text style={styles.itemSub}>{effect}</Text>}
                             </View>
                           );
@@ -174,20 +194,13 @@ export default function Home() {
             </Tint>
           );
         })}
-          </View>
-        )}
+        </Section>
 
-        <View style={styles.calPart}>
-          <View style={styles.band}>
-            <View style={styles.rule} />
-            <Icon name="calendar" size={22} color={C.primary} />
-            <Text style={styles.bandText}>캘린더</Text>
-            <View style={styles.rule} />
-          </View>
-          <View style={{ gap: S.section }}>
-            <CalendarView mode="week" />
-          </View>
-        </View>
+        <Section icon="calendar" title="캘린더">
+          <CalendarView mode="week" />
+        </Section>
+
+        <HomeSummary />
 
         {online === false && <Text style={styles.offline}>서버에 연결되지 않았어요</Text>}
       </ScrollView>
@@ -198,10 +211,20 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 102, gap: S.section },
+  wrap: { flexGrow: 1, paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 102, gap: 16 }, // 구역 사이는 Section이 8을 더해 24, 제목 줄과 첫 구역은 바로 붙는다
   date: { fontSize: 18, color: C.sub },
-  gear: { width: 44, height: 44, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  gear: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  // 날짜 | 요일 | 시각: 진행 카드 맨 위에 같은 폭의 세 칸으로 나눠 놓는다
+  // 맨 위 한 줄: 왼쪽 날짜 + 요일 단추, 오른쪽 시각
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40, marginBottom: S.in },
+  dateGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dateBig: { fontSize: 22, fontWeight: '800', color: C.text },
+  weekBadge: { borderRadius: 14, backgroundColor: C.primary, paddingHorizontal: 12, paddingVertical: 3 },
+  weekText: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  timeBox: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 20, backgroundColor: C.fill, paddingHorizontal: 14, minHeight: 40 },
+  timeText: { fontSize: 20, fontWeight: '800', color: C.primary },
   status: { ...CARD, padding: S.pad, gap: S.in },
+  hint: { fontSize: 18, fontWeight: '800', color: C.sub },
   nowRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   now: { fontSize: 18, fontWeight: '700', color: C.sub },
   statusText: { fontSize: 22, lineHeight: 32, fontWeight: '800', color: C.text },
@@ -219,18 +242,17 @@ const styles = StyleSheet.create({
   slotTime: { flexShrink: 0, fontSize: 16, color: C.sub },
   slotName: { fontSize: 20, fontWeight: '800', color: C.text, flexShrink: 1 },
   chip: { flexShrink: 0, fontSize: 16, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, overflow: 'hidden' },
-  allBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  allBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
   allNow: { backgroundColor: C.orange, borderColor: C.orange },
   chipDone: { backgroundColor: '#4F7A60', color: '#fff' },
   chipLate: { backgroundColor: C.orange, color: '#fff' },
-  rows: { ...CARD }, // overflow를 숨기면 iOS에서 카드 그림자가 잘린다
-  row: { padding: S.item, gap: S.in },
-  rowLine: { borderTopWidth: 1, borderTopColor: C.line },
+  rows: { gap: 8 },
+  row: { backgroundColor: '#fff', borderRadius: R.card, padding: S.item, gap: S.in },
   titleLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   check: { flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 16 },
   expand: { width: 44, height: 44, borderRadius: 24, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-  drugRow: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in, gap: S.tight },
+  drugRow: { backgroundColor: C.soft, borderRadius: 12, padding: S.in, gap: S.tight },
   drugName: { fontSize: 18, lineHeight: 28, fontWeight: '700', color: C.text },
   box: { width: 40, height: 40, borderRadius: 12, borderWidth: 3, borderColor: C.border, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   boxDone: { backgroundColor: C.primary, borderColor: C.primary },
@@ -240,7 +262,7 @@ const styles = StyleSheet.create({
   // 홈은 두 구역: 오늘 먹을 약(체크리스트) / 캘린더. 구역마다 제목을 달고, 둘 사이는 줄과 넓은 간격으로 나눈다.
   part: { gap: S.gap },
   partTitle: { fontSize: 22, fontWeight: '800', color: C.text },
-  calPart: { gap: S.gap, marginTop: S.section },
+  calPart: { gap: S.gap },
   // 구역 제목은 카드가 아니라 "선 — 아이콘·제목 — 선" 구분자: 카드(네모 상자)와 모양이 달라 한눈에 구역이 나뉜다
   band: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rule: { flex: 1, height: 2, borderRadius: 1, backgroundColor: C.mist },

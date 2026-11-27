@@ -22,7 +22,7 @@ const TITLES: Record<string, string> = {
   edit: '약 고치기',
   'visit-edit': '진료 기록 고치기',
   account: '내 계정',
-  patient: '환자 약 보기',
+  links: '연동 계정 관리',
   post: '글 보기',
   write: '글쓰기',
   more: '설정',

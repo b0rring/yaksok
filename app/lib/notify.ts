@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Plan, Slot, SLOTS, activePlans, allActiveSlots, planTitle } from './store';
+import { Plan, Slot, SLOTS, allActiveSlots, localActivePlans, planTitle } from './store';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -29,7 +29,7 @@ export async function scheduleSlots(slots: Slot[]) {
   const p = await Notifications.requestPermissionsAsync();
   if (!p.granted) return false;
   await Notifications.cancelAllScheduledNotificationsAsync();
-  const plans = await activePlans();
+  const plans = await localActivePlans();
   for (const s of SLOTS.filter((s) => slots.includes(s.id))) {
     await Notifications.scheduleNotificationAsync({
       content: content(s.label, plans.filter((pl) => pl.slots.includes(s.id))),
@@ -43,7 +43,7 @@ export async function scheduleSlots(slots: Slot[]) {
 export async function testIn5s() {
   const p = await Notifications.requestPermissionsAsync();
   if (!p.granted) return false;
-  const plans = await activePlans();
+  const plans = await localActivePlans();
   const slot = SLOTS.find((s) => plans.some((pl) => pl.slots.includes(s.id)));
   await Notifications.scheduleNotificationAsync({
     content: slot ? content(slot.label, plans.filter((pl) => pl.slots.includes(slot.id))) : { title: '약 드실 시간이에요', body: '눌러서 오늘 약을 확인하세요.' },

@@ -60,6 +60,7 @@ export default function DrugCard({ d, bare, speak }: { d: Drug; bare?: boolean; 
     <View style={styles.box}>
       {!bare && <Text style={styles.name}>{d.name}</Text>}
       <Text style={[styles.ai, d.by === 'user' && { color: C.green }]}>{WHO[d.by ?? 'ai']}</Text>
+      {!!d.dose && <Block label="1회 먹는 양" icon="pill" tone="plain" text={d.dose} />}
       {rows.map((r) => (
         <Block key={r.key} label={r.label} icon={r.icon} tone={r.tone} text={d[r.key]} />
       ))}

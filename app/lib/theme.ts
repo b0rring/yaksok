@@ -12,6 +12,7 @@ export const C = {
   gray: '#64706A',
   line: '#E4ECE7',
   soft: '#F1F6F2',
+  fill: '#E3ECE6', // 칩·날짜 칸처럼 "테두리 대신 바탕색으로" 구분하는 작은 칸의 바탕
   mist: '#D2E1D7',
   border: '#6F8E7F', // 입력칸·체크칸·보조 버튼의 경계: 흰 바탕과 3:1 이상
   peach: '#FFE9DD',
@@ -27,15 +28,15 @@ export const R = { card: 16, ctl: 12 };
 // / 카드 안 덩어리 사이 in 12 / 붙어 있는 글 사이 tight 4 / 덩어리(구역) 사이 section 32 (구역 = 제목 + 카드들, 안은 gap 16)
 export const S = { page: 16, gap: 16, pad: 20, item: 16, in: 12, tight: 4, section: 28 };
 
-// 카드: 얇은 선 대신 아주 옅은 그림자
+// 카드(바깥 칸): 안쪽 칸(연초록 바탕)보다 분리가 더 강해야 해서 한 단계 진한 테두리와 짙은 그림자
 export const CARD = {
   backgroundColor: '#FFFFFF',
   borderRadius: R.card,
-  borderWidth: 1,
-  borderColor: '#E4ECE7',
+  borderWidth: 1.5,
+  borderColor: '#D2E1D7',
   shadowColor: '#1E3A2F',
-  shadowOpacity: 0.07,
+  shadowOpacity: 0.14,
   shadowRadius: 14,
-  shadowOffset: { width: 0, height: 4 },
-  elevation: 2,
+  shadowOffset: { width: 0, height: 6 },
+  elevation: 5,
 } as const;

@@ -8,7 +8,7 @@ import { useGuide } from '../components/Guide';
 import Icon from '../components/Icon';
 import { useAuth } from '../lib/auth';
 import { syncNotifications, testIn5s } from '../lib/notify';
-import { RATES, SCALES, useSettings } from '../lib/settings';
+import { CLOCKS, RATES, SCALES, useSettings } from '../lib/settings';
 import { SLOTS, Slot, addPlan, saveTime, timeText } from '../lib/store';
 import { C, CARD, R, S } from '../lib/theme';
 
@@ -22,7 +22,7 @@ export default function Settings() {
   const router = useRouter();
   const { user } = useAuth();
   const openGuide = useGuide();
-  const { scale, rate, set } = useSettings();
+  const { scale, rate, clock, set } = useSettings();
   const [, bump] = useState(0); // 시간이 바뀌면 화면을 다시 그린다 (SLOTS 값이 바뀜)
 
   const move = async (id: Slot, delta: number) => {
@@ -38,10 +38,16 @@ export default function Settings() {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={styles.wrap}>
       <BigButton label={user ? `내 계정 (${user.name})` : '로그인 또는 가입'} onPress={() => router.push('/account')} />
+      {(user?.role === 'patient' || user?.role === 'guardian') && <BigButton label="연동 계정 관리" variant="secondary" onPress={() => router.push('/links')} />}
 
       <Section title="글씨 크기">
         <Choice options={SCALES} value={scale} onPick={(v) => set({ scale: v })} />
         <Text style={styles.sample}>이 크기로 보여요</Text>
+      </Section>
+
+      <Section title="시각 표기 형식">
+        <Choice options={CLOCKS} value={clock} onPick={(v) => set({ clock: v })} />
+        <Text style={styles.sample}>{clock === 24 ? '표기 예: 13:05' : '표기 예: 오후 1:05'}</Text>
       </Section>
 
       <Section title="약 드시는 시간">

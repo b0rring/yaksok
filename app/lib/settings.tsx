@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { loadTimes } from './store';
+import { loadTimes, setClock } from './store';
 
 // 사용자 설정: 글씨 크기(배율), 읽는 속도. 약 먹는 시간은 store.ts(SLOTS)에 있다.
 export const SCALES = [
@@ -8,13 +8,17 @@ export const SCALES = [
   { id: 1.15, label: '크게' },
   { id: 1.3, label: '아주 크게' },
 ] as const;
+export const CLOCKS = [
+  { id: 12, label: '12시간제' },
+  { id: 24, label: '24시간제' },
+] as const;
 export const RATES = [
   { id: 0.85, label: '천천히' },
   { id: 1, label: '보통' },
 ] as const;
 
-type Settings = { scale: number; rate: number };
-const DEFAULT: Settings = { scale: 1, rate: 0.85 };
+type Settings = { scale: number; rate: number; clock: number };
+const DEFAULT: Settings = { scale: 1, rate: 0.85, clock: 12 };
 const KEY = 'settings';
 
 const Ctx = createContext<Settings & { set: (s: Partial<Settings>) => void }>({ ...DEFAULT, set: () => {} });
@@ -29,7 +33,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const v = await AsyncStorage.getItem(KEY);
-        if (v) setS({ ...DEFAULT, ...JSON.parse(v) });
+        if (v) {
+          const saved = { ...DEFAULT, ...JSON.parse(v) };
+          setS(saved);
+          setClock(saved.clock);
+        }
         await loadTimes();
       } catch {}
       setReady(true);
@@ -39,6 +47,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const set = (p: Partial<Settings>) =>
     setS((old) => {
       const next = { ...old, ...p };
+      setClock(next.clock);
       AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
       return next;
     });

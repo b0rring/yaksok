@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from services.db import conn
 
-# 계정·보호자 연동·약 기록 동기화·커뮤니티 (프로토타입: 서버 SQLite, 간단한 아이디·비밀번호 로그인).
+# 계정·보호자 연동(상대 허락 필요)·약 기록 동기화·커뮤니티 (프로토타입: 서버 SQLite, 간단한 아이디·비밀번호 로그인).
 router = APIRouter()
 ROLES = ("patient", "guardian", "doctor")
 CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # 헷갈리는 글자(0 O 1 I)를 뺀 6자리 고유 코드
@@ -16,6 +16,13 @@ CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # 헷갈리는 글자(0 O 1 I)�
 
 def _hash(pw: str, salt: str) -> str:
     return hashlib.pbkdf2_hmac("sha256", pw.encode(), salt.encode(), 100_000).hex()
+
+
+def _new_code(c) -> str:
+    while True:
+        code = "".join(secrets.choice(CODE_CHARS) for _ in range(6))
+        if not c.execute("SELECT 1 FROM users WHERE code = ?", (code,)).fetchone():
+            return code
 
 
 def _user_out(u) -> dict:
@@ -64,10 +71,7 @@ def signup(b: Signup):
     with conn() as c:
         if c.execute("SELECT 1 FROM users WHERE login_id = ?", (lid,)).fetchone():
             raise HTTPException(409, "이미 있는 아이디예요")
-        while True:
-            code = "".join(secrets.choice(CODE_CHARS) for _ in range(6))
-            if not c.execute("SELECT 1 FROM users WHERE code = ?", (code,)).fetchone():
-                break
+        code = _new_code(c)
         cur = c.execute(
             "INSERT INTO users (login_id, name, role, salt, pw, code) VALUES (?,?,?,?,?,?)", (lid, name, b.role, salt, _hash(b.password, salt), code)
         )
@@ -89,69 +93,163 @@ def get_me(authorization: str | None = Header(None)):
     return _user_out(me(authorization))
 
 
-# ── 보호자 연동: 보호자가 환자의 고유 코드를 입력하면 연결된다 ──
+# ── 보호자 연동: 환자와 보호자가 서로의 고유 코드로 연결을 요청하고, 상대가 허락하면 연결된다 ──
+EMPTY = {"plans": [], "logs": [], "visits": []}
+
+
 class LinkIn(BaseModel):
     code: str
+
+
+def _pair(c, a: int, b: int):
+    return c.execute(
+        "SELECT * FROM links WHERE (patient_id = ? AND guardian_id = ?) OR (patient_id = ? AND guardian_id = ?)", (a, b, b, a)
+    ).fetchone()
+
+
+@router.post("/me/code")
+def new_code(authorization: str | None = Header(None)):
+    """고유 코드를 새로 받는다 (코드가 남에게 알려졌을 때). 이미 연결된 사람은 그대로다."""
+    u = me(authorization)
+    with conn() as c:
+        code = _new_code(c)
+        c.execute("UPDATE users SET code = ? WHERE id = ?", (code, u["id"]))
+    return {"code": code}
 
 
 @router.post("/links")
 def add_link(b: LinkIn, authorization: str | None = Header(None)):
     u = me(authorization)
-    if u["role"] != "guardian":
-        raise HTTPException(403, "보호자 계정만 연결할 수 있어요")
+    if u["role"] not in ("patient", "guardian"):
+        raise HTTPException(403, "환자와 보호자 계정만 연결할 수 있어요")
     with conn() as c:
-        p = c.execute("SELECT * FROM users WHERE code = ? AND role = 'patient'", (b.code.strip().upper(),)).fetchone()
-        if not p:
-            raise HTTPException(404, "이 코드의 환자를 찾지 못했어요")
-        c.execute("INSERT OR IGNORE INTO links (patient_id, guardian_id) VALUES (?, ?)", (p["id"], u["id"]))
-        return {"id": p["id"], "name": p["name"]}
+        t = c.execute("SELECT * FROM users WHERE code = ?", (b.code.strip().upper(),)).fetchone()
+        if not t:
+            raise HTTPException(404, "이 코드의 계정을 찾지 못했어요")
+        if t["id"] == u["id"]:
+            raise HTTPException(422, "내 코드예요. 상대의 코드를 넣어 주세요")
+        if {u["role"], t["role"]} != {"patient", "guardian"}:
+            raise HTTPException(422, "환자와 보호자끼리만 연결할 수 있어요")
+        pid, gid = (u["id"], t["id"]) if u["role"] == "patient" else (t["id"], u["id"])
+        row = _pair(c, pid, gid)
+        out = {"id": t["id"], "name": t["name"], "role": t["role"]}
+        if row:
+            if row["status"] == "active":
+                raise HTTPException(409, "이미 연결돼 있어요")
+            if row["requester"] == u["id"]:
+                raise HTTPException(409, "이미 요청했어요. 상대가 허락하면 연결돼요")
+            # 상대가 먼저 요청해 둔 경우: 서로 원하는 것이므로 바로 연결한다
+            c.execute("UPDATE links SET status = 'active' WHERE patient_id = ? AND guardian_id = ?", (pid, gid))
+            return {**out, "status": "active"}
+        c.execute("INSERT INTO links (patient_id, guardian_id, status, requester) VALUES (?, ?, 'pending', ?)", (pid, gid, u["id"]))
+        return {**out, "status": "pending"}
 
 
 @router.get("/links")
 def list_links(authorization: str | None = Header(None)):
     u = me(authorization)
     with conn() as c:
-        pats = c.execute("SELECT u.id, u.name FROM links l JOIN users u ON u.id = l.patient_id WHERE l.guardian_id = ?", (u["id"],)).fetchall()
-        guards = c.execute("SELECT u.id, u.name FROM links l JOIN users u ON u.id = l.guardian_id WHERE l.patient_id = ?", (u["id"],)).fetchall()
-    return {"patients": [dict(r) for r in pats], "guardians": [dict(r) for r in guards]}
+        rows = c.execute(
+            "SELECT l.status, l.requester, l.patient_id, l.guardian_id, p.name AS pn, g.name AS gn FROM links l "
+            "JOIN users p ON p.id = l.patient_id JOIN users g ON g.id = l.guardian_id WHERE l.patient_id = ? OR l.guardian_id = ?",
+            (u["id"], u["id"]),
+        ).fetchall()
+    out = {"patients": [], "guardians": [], "incoming": [], "outgoing": []}
+    for r in rows:
+        mine_is_patient = r["patient_id"] == u["id"]
+        other = {"id": r["guardian_id"], "name": r["gn"], "role": "guardian"} if mine_is_patient else {"id": r["patient_id"], "name": r["pn"], "role": "patient"}
+        if r["status"] == "active":
+            out["guardians" if mine_is_patient else "patients"].append({"id": other["id"], "name": other["name"]})
+        else:
+            out["outgoing" if r["requester"] == u["id"] else "incoming"].append(other)
+    return out
+
+
+@router.post("/links/{other_id}/accept")
+def accept_link(other_id: int, authorization: str | None = Header(None)):
+    u = me(authorization)
+    with conn() as c:
+        row = _pair(c, u["id"], other_id)
+        if not row or row["status"] != "pending" or row["requester"] == u["id"]:
+            raise HTTPException(404, "받은 요청이 없어요")
+        c.execute("UPDATE links SET status = 'active' WHERE patient_id = ? AND guardian_id = ?", (row["patient_id"], row["guardian_id"]))
+    return {"ok": True}
 
 
 @router.delete("/links/{other_id}")
 def remove_link(other_id: int, authorization: str | None = Header(None)):
+    """연결 끊기, 받은 요청 거절, 보낸 요청 취소가 모두 이것이다."""
     u = me(authorization)
     with conn() as c:
         c.execute("DELETE FROM links WHERE (patient_id = ? AND guardian_id = ?) OR (patient_id = ? AND guardian_id = ?)", (other_id, u["id"], u["id"], other_id))
     return {"ok": True}
 
 
-# ── 약 기록 동기화: 환자 앱이 기기 안의 복약 계획·기록·진료 기록을 서버에 올리고, 연결된 보호자가 읽는다 ──
+# ── 약 기록 동기화: 환자의 복약 계획·기록·진료 기록은 서버에도 한 부 있다. 환자 본인 기기와 연결된 보호자가 같이 읽고 고친다 ──
+# rev: 저장할 때마다 1 올라가는 번호. 쓰는 쪽이 "내가 본 번호(base)"를 같이 보내고, 그새 남이 고쳤으면(번호가 다르면) 저장하지 않고 최신본을 돌려준다.
 class Snapshot(BaseModel):
     plans: list = []
     logs: list = []
     visits: list = []
+    base: int | None = None  # None이면 번호를 따지지 않고 덮어쓴다
+
+
+def _read_snap(c, uid: int):
+    s = c.execute("SELECT data, updated, rev FROM snap WHERE user_id = ?", (uid,)).fetchone()
+    if not s:
+        return {k: [] for k in EMPTY}, 0, None
+    return json.loads(s["data"]), s["rev"], s["updated"]
+
+
+def _write_snap(uid: int, b: Snapshot):
+    with conn() as c:
+        c.execute("BEGIN IMMEDIATE")  # ponytail: SQLite 쓰기 잠금으로 번호 검사와 저장을 한꺼번에. 사용자가 늘면 DB를 바꿔야 한다
+        data, rev, _ = _read_snap(c, uid)
+        if b.base is not None and b.base != rev:
+            return {"ok": False, "rev": rev, "data": data}
+        new = {"plans": b.plans, "logs": b.logs, "visits": b.visits}
+        c.execute(
+            "INSERT INTO snap (user_id, data, updated, rev) VALUES (?, ?, CURRENT_TIMESTAMP, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated = CURRENT_TIMESTAMP, rev = excluded.rev",
+            (uid, json.dumps(new, ensure_ascii=False), rev + 1),
+        )
+        return {"ok": True, "rev": rev + 1, "data": new}
+
+
+def _guardian_of(c, pid: int, gid: int):
+    if not c.execute("SELECT 1 FROM links WHERE patient_id = ? AND guardian_id = ? AND status = 'active'", (pid, gid)).fetchone():
+        raise HTTPException(403, "연결된 환자가 아니에요")
+
+
+@router.get("/sync")
+def get_sync(authorization: str | None = Header(None)):
+    u = me(authorization)
+    with conn() as c:
+        data, rev, updated = _read_snap(c, u["id"])
+    return {"rev": rev, "updated": updated, "data": data}
 
 
 @router.put("/sync")
 def push_sync(b: Snapshot, authorization: str | None = Header(None)):
-    u = me(authorization)
-    with conn() as c:
-        c.execute(
-            "INSERT INTO snap (user_id, data, updated) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated = CURRENT_TIMESTAMP",
-            (u["id"], json.dumps(b.model_dump(), ensure_ascii=False)),
-        )
-    return {"ok": True}
+    return _write_snap(me(authorization)["id"], b)
 
 
 @router.get("/patients/{pid}/data")
 def patient_data(pid: int, authorization: str | None = Header(None)):
     u = me(authorization)
     with conn() as c:
-        if not c.execute("SELECT 1 FROM links WHERE patient_id = ? AND guardian_id = ?", (pid, u["id"])).fetchone():
-            raise HTTPException(403, "연결된 환자가 아니에요")
+        _guardian_of(c, pid, u["id"])
         p = c.execute("SELECT name FROM users WHERE id = ?", (pid,)).fetchone()
-        s = c.execute("SELECT data, updated FROM snap WHERE user_id = ?", (pid,)).fetchone()
-    data = json.loads(s["data"]) if s else {"plans": [], "logs": [], "visits": []}
-    return {"name": p["name"], "updated": s["updated"] if s else None, **data}
+        data, rev, updated = _read_snap(c, pid)
+    return {"name": p["name"], "rev": rev, "updated": updated, "data": data}
+
+
+@router.put("/patients/{pid}/data")
+def put_patient_data(pid: int, b: Snapshot, authorization: str | None = Header(None)):
+    u = me(authorization)
+    with conn() as c:
+        _guardian_of(c, pid, u["id"])
+    return _write_snap(pid, b)
 
 
 # ── 커뮤니티: 글 목록·글 보기·댓글. 의사 댓글에는 role=doctor로 "의사" 배지를 단다 ──

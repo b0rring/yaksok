@@ -1,9 +1,10 @@
+import type { Snap } from './sync';
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 // 식약처 e약은요 공식 설명 (서버가 찾지 못하면 없음). demo=true면 키가 없어서 쓴 시연용 예시.
 export type Official = { name: string; company: string; efcy: string; use: string; warn: string; atpn: string; intrc: string; se: string; deposit: string; demo: boolean };
 // by: 설명을 누가 썼는지 — ai(AI가 정리, 기본) / user(직접 적음) / mix(직접 적은 것에 AI가 보탬)
-export type Drug = { name: string; effect: string; how: string; caution: string; avoid: string; official?: Official | null; by?: 'ai' | 'user' | 'mix' };
+export type Drug = { name: string; dose?: string; effect: string; how: string; caution: string; avoid: string; official?: Official | null; by?: 'ai' | 'user' | 'mix' };
 // condition: 무슨 병·증상 때문에 처방받았는지 (없으면 빈 글). guess: 봉투에 없어서 AI가 약을 보고 짐작한 것
 export type ScanResult = { drugs: Drug[]; schedule: { slots: string[]; days: number }; source: string; condition?: string; guess?: boolean; hospital?: string; pharmacy?: string; date?: string };
 export type VisitSummary = { hospital: string; reason: string; summary: string; transcript?: string };
@@ -94,7 +95,10 @@ export type Role = 'patient' | 'guardian' | 'doctor';
 export type User = { id: number; login_id: string; name: string; role: Role; code: string };
 export type Post = { id: number; title: string; body: string; created: string; name: string; role: Role; comments: number };
 export type Comment = { id: number; body: string; created: string; name: string; role: Role };
-export type PatientData = { name: string; updated: string | null; plans: any[]; logs: any[]; visits: any[] };
+export type Linked = { id: number; name: string };
+export type Pending = { id: number; name: string; role: Role };
+export type Links = { patients: Linked[]; guardians: Linked[]; incoming: Pending[]; outgoing: Pending[] };
+export type SyncReply = { ok?: boolean; rev: number; updated?: string | null; name?: string; data: Snap };
 
 // 서버가 돌려주는 한국어 오류 문구(detail)를 그대로 던진다 (화면에서 보여 줌)
 export class ApiError extends Error {}
@@ -122,11 +126,15 @@ export const apiSignup = (b: { login_id: string; name: string; role: Role; passw
   call<{ token: string; user: User }>('POST', '/auth/signup', b);
 export const apiLogin = (login_id: string, password: string) => call<{ token: string; user: User }>('POST', '/auth/login', { login_id, password });
 export const apiMe = (t: string) => call<User>('GET', '/me', undefined, t);
-export const apiLinks = (t: string) => call<{ patients: { id: number; name: string }[]; guardians: { id: number; name: string }[] }>('GET', '/links', undefined, t);
-export const apiAddLink = (t: string, code: string) => call<{ id: number; name: string }>('POST', '/links', { code }, t);
+export const apiLinks = (t: string) => call<Links>('GET', '/links', undefined, t);
+export const apiAddLink = (t: string, code: string) => call<Pending & { status: 'pending' | 'active' }>('POST', '/links', { code }, t);
+export const apiAcceptLink = (t: string, id: number) => call<{ ok: boolean }>('POST', `/links/${id}/accept`, undefined, t);
 export const apiRemoveLink = (t: string, id: number) => call<{ ok: boolean }>('DELETE', `/links/${id}`, undefined, t);
-export const apiSync = (t: string, snap: { plans: unknown[]; logs: unknown[]; visits: unknown[] }) => call<{ ok: boolean }>('PUT', '/sync', snap, t);
-export const apiPatient = (t: string, id: number) => call<PatientData>('GET', `/patients/${id}/data`, undefined, t);
+export const apiNewCode = (t: string) => call<{ code: string }>('POST', '/me/code', undefined, t);
+export const apiGetSync = (t: string) => call<SyncReply>('GET', '/sync', undefined, t);
+export const apiPutSync = (t: string, snap: Snap, base: number) => call<SyncReply>('PUT', '/sync', { ...snap, base }, t);
+export const apiGetPatient = (t: string, id: number) => call<SyncReply>('GET', `/patients/${id}/data`, undefined, t);
+export const apiPutPatient = (t: string, id: number, snap: Snap, base: number) => call<SyncReply>('PUT', `/patients/${id}/data`, { ...snap, base }, t);
 export const apiPosts = () => call<Post[]>('GET', '/posts');
 export const apiPost = (id: number) => call<Omit<Post, 'comments'> & { comments: Comment[] }>('GET', `/posts/${id}`);
 export const apiAddPost = (t: string, title: string, body: string) => call<{ id: number }>('POST', '/posts', { title, body }, t);

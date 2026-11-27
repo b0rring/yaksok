@@ -1,18 +1,20 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useDialog } from '../components/Dialog';
+import { useAuth } from './auth';
 import { Log, Plan, SLOTS, Slot, addLogs, didTake, getLogs, getPlans, isActive, planTitle, removeLog, today } from './store';
 
 // 오늘 먹을 약: 시간대마다 "약 묶음(처방 한 장 = 한 병)" 목록과 먹었는지. 홈 체크리스트와 약 물어보기가 함께 쓴다.
 export function useTodayMeds() {
   const [all, setAll] = useState<Plan[]>([]); // 중지·끝난 약까지 모두
   const [logs, setLogs] = useState<Log[]>([]);
+  const { version } = useAuth(); // 전환하거나 상대가 고치면 다시 읽는다
 
   const load = useCallback(async () => {
     const [p, l] = await Promise.all([getPlans(), getLogs()]);
     setAll(p); // 계획과 기록을 같은 순간에 반영해야 "안 먹은 상태로 잠깐 보였다가 먹은 상태로 바뀌는" 일이 없다
     setLogs(l);
-  }, []);
+  }, [version]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const ask = useDialog();

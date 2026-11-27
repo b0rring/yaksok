@@ -1,12 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from '../components/AppText';
 import BigButton from '../components/BigButton';
 import { useDialog } from '../components/Dialog';
 import { Drug, organizeDrugs } from '../lib/api';
 import { syncNotifications } from '../lib/notify';
-import { getPlans, updatePlan } from '../lib/store';
+import { SLOTS, Slot, addDays, getPlans, timeText, updatePlan } from '../lib/store';
+import Icon from '../components/Icon';
 import { C, CARD, S } from '../lib/theme';
 
 const FIELDS = [
@@ -29,6 +30,9 @@ export default function Edit() {
   const [condition, setCondition] = useState('');
   const [drugs, setDrugs] = useState<Drug[]>([]);
   const [busy, setBusy] = useState(false);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [days, setDays] = useState(7);
+  const [start, setStart] = useState('');
   const [hospital, setHospital] = useState('');
   const [pharmacy, setPharmacy] = useState('');
   const [date, setDate] = useState(''); // 조제일 YYYY-MM-DD
@@ -43,6 +47,9 @@ export default function Edit() {
       setOrig(p.condition ?? '');
       setCondition(p.condition ?? '');
       setGuess(!!p.guess);
+      setSlots(p.slots);
+      setDays(p.days);
+      setStart(p.start);
       setHospital(p.hospital ?? '');
       setPharmacy(p.pharmacy ?? '');
       setDate(p.prescribedOn ?? '');
@@ -68,7 +75,7 @@ export default function Edit() {
         list.map((d) => {
           const a = r.drugs.find((x) => x.name === d.name.trim());
           if (!a) return d;
-          return { ...a, by: wrote(d) && d.by !== 'ai' ? 'mix' : 'ai' };
+          return { ...a, dose: d.dose, by: wrote(d) && d.by !== 'ai' ? 'mix' : 'ai' };
         }),
       );
       ask({ title: 'AI가 정리했어요', message: '비어 있던 칸을 채웠어요.\n틀린 곳이 없는지 읽어 보고 고쳐 주세요.' });
@@ -82,10 +89,11 @@ export default function Edit() {
   const save = async () => {
     const list = drugs.map((d) => ({ ...d, name: d.name.trim() })).filter((d) => d.name);
     if (!list.length) return ask({ title: '약이 하나는 있어야 해요', message: '약 이름을 적어 주세요.' });
+    if (!slots.length) return ask({ title: '언제 드시는지 골라 주세요', message: '아침, 점심, 저녁 중 하나는 있어야 해요.' });
     const c = condition.trim();
     const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date.trim()) ? date.trim() : '';
     const meta = { hospital: hospital.trim(), pharmacy: pharmacy.trim(), prescribedOn: dateOk };
-    await updatePlan(String(id), { condition: c, guess: guess && c === orig, drugs: list.map((d) => d.name), info: list, ...meta, metaAi: metaAi && `${meta.hospital}|${meta.pharmacy}|${meta.prescribedOn}` === metaOrig });
+    await updatePlan(String(id), { slots: SLOTS.map((s) => s.id).filter((s) => slots.includes(s)), days, condition: c, guess: guess && c === orig, drugs: list.map((d) => d.name), info: list, ...meta, metaAi: metaAi && `${meta.hospital}|${meta.pharmacy}|${meta.prescribedOn}` === metaOrig });
     syncNotifications().catch(() => {}); // 알림에 적힌 약 이름도 새로 맞춘다
     ask({ title: '저장했어요', actions: [{ label: '확인', onPress: () => (router.canGoBack() ? router.back() : router.navigate('/drugs')) }] });
   };
@@ -108,6 +116,32 @@ export default function Edit() {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.label}>언제 드세요?</Text>
+          <View style={styles.slots}>
+            {SLOTS.map((s) => {
+              const on = slots.includes(s.id);
+              return (
+                <Pressable key={s.id} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => setSlots((a) => (on ? a.filter((x) => x !== s.id) : [...a, s.id]))} style={[styles.slot, on && styles.slotOn]}>
+                  <Text style={[styles.slotName, on && { color: '#fff' }]}>{s.label}</Text>
+                  <Text style={[styles.slotTime, on && { color: '#fff' }]}>{timeText(s)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.label}>며칠 동안 드세요?</Text>
+          <View style={styles.stepper}>
+            <Pressable accessibilityRole="button" accessibilityLabel="하루 줄이기" onPress={() => setDays((d) => Math.max(1, d - 1))} style={styles.stepBtn}>
+              <Icon name="minus" size={24} color={C.primary} />
+            </Pressable>
+            <Text style={styles.days}>{days}일</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="하루 늘리기" onPress={() => setDays((d) => Math.min(90, d + 1))} style={styles.stepBtn}>
+              <Icon name="plus" size={24} color={C.primary} />
+            </Pressable>
+          </View>
+          {!!start && <Text style={styles.hint}>{start.replace(/^\d+-0?(\d+)-0?(\d+)$/, '$1월 $2일')}부터 {addDays(start, days - 1).replace(/^\d+-0?(\d+)-0?(\d+)$/, '$1월 $2일')}까지예요</Text>}
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.label}>처방받은 병원</Text>
           <TextInput value={hospital} onChangeText={setHospital} placeholder="병원 이름 (모르면 비워 두세요)" placeholderTextColor={C.gray} style={styles.input} />
           <Text style={styles.label}>조제한 약국</Text>
@@ -120,6 +154,8 @@ export default function Edit() {
           <View key={i} style={styles.card}>
             <Text style={styles.label}>약 이름</Text>
             <TextInput value={d.name} onChangeText={(t) => rename(i, t)} placeholder="약 이름" placeholderTextColor={C.gray} style={styles.input} />
+            <Text style={styles.label}>1회 먹는 양 (모르면 비워 두세요)</Text>
+            <TextInput value={d.dose ?? ''} onChangeText={(t) => setDrugs((all) => all.map((x, k) => (k === i ? { ...x, dose: t } : x)))} placeholder="예: 1정" placeholderTextColor={C.gray} style={styles.input} />
             {FIELDS.map(([k, label]) => (
               <View key={k} style={{ gap: 5 }}>
                 <Text style={styles.label}>{label}</Text>
@@ -152,6 +188,14 @@ const styles = StyleSheet.create({
   card: { ...CARD, padding: S.pad, gap: 12 },
   label: { fontSize: 18, fontWeight: '800', color: C.green },
   input: { minHeight: 52, borderRadius: 12, backgroundColor: C.soft, borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 16, paddingVertical: 12, fontSize: 18, color: C.text },
+  slots: { flexDirection: 'row', gap: 8 },
+  slot: { flex: 1, minHeight: 64, borderRadius: 16, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  slotOn: { backgroundColor: C.primary },
+  slotName: { fontSize: 20, fontWeight: '800', color: C.text },
+  slotTime: { fontSize: 16, color: C.sub },
+  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stepBtn: { width: 56, height: 56, borderRadius: 28, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
+  days: { fontSize: 30, fontWeight: '800', color: C.text },
   multi: { minHeight: 76, textAlignVertical: 'top' },
   hint: { fontSize: 16, lineHeight: 24, color: C.sub, textAlign: 'center' },
 });

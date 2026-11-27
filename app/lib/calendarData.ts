@@ -1,5 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
+import { useAuth } from './auth';
 import { Log, Plan, Visit, addDays, getLogs, getPlans, getVisits, planEnd } from './store';
 
 export type Kind = 'plan' | 'taken' | 'visit';
@@ -9,12 +10,13 @@ export function useCalendarData() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const { version } = useAuth(); // 전환하거나 상대가 고치면 다시 읽는다
 
   const load = useCallback(async () => {
     setPlans(await getPlans());
     setLogs(await getLogs());
     setVisits(await getVisits());
-  }, []);
+  }, [version]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const dots = useMemo(() => {

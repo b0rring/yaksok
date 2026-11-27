@@ -8,20 +8,51 @@ export const SLOTS: { id: Slot; label: string; hour: number; minute: number }[] 
   { id: 'evening', label: '저녁', hour: 18, minute: 30 },
 ];
 // ponytail: 약 먹는 시간은 앱 곳곳에서 SLOTS를 읽으므로, 설정에서 바꾸면 이 값을 직접 고친다 (시작할 때 loadTimes로 불러옴).
-export const timeText = (s: { hour: number; minute: number }) =>
-  `${s.hour < 12 ? '오전' : '오후'} ${s.hour % 12 || 12}:${String(s.minute).padStart(2, '0')}`;
+// 시각 표시: 12시간제는 반드시 오전·오후를 붙이고(오후 1:05), 24시간제는 13:05. 설정에서 고른다 (lib/settings.tsx가 값을 넣어 준다)
+let clock: 12 | 24 = 12;
+export const setClock = (c: number) => {
+  clock = c === 24 ? 24 : 12;
+};
+export const fmtTime = (hour: number, minute: number) => {
+  const mm = String(minute).padStart(2, '0');
+  return clock === 24 ? `${String(hour).padStart(2, '0')}:${mm}` : `${hour < 12 ? '오전' : '오후'} ${hour % 12 || 12}:${mm}`;
+};
+export const timeText = (s: { hour: number; minute: number }) => fmtTime(s.hour, s.minute);
 export const slotLabel = (s: string) => SLOTS.find((x) => x.id === s)?.label ?? s;
 
-async function read<T>(key: string, fallback: T): Promise<T> {
+async function readLocal<T>(key: string, fallback: T): Promise<T> {
   const v = await AsyncStorage.getItem(key);
   return v ? JSON.parse(v) : fallback;
 }
+// 보호자가 연결된 환자의 화면으로 전환해 있으면, 복약 계획·기록·진료 기록은 기기 대신 환자의 서버 사본(cache)을 읽고 고친다.
+// 시간·설정 같은 나머지는 계속 이 기기 것이다.
+const SYNCED = ['plans', 'logs', 'visits'];
+type Remote = { cache: Record<string, unknown>; touch: () => void };
+let remote: Remote | null = null;
+export const setRemote = (r: Remote | null) => {
+  remote = r;
+};
+export const isRemote = () => !!remote;
+async function read<T>(key: string, fallback: T): Promise<T> {
+  if (remote && SYNCED.includes(key)) return (remote.cache[key] as T) ?? fallback;
+  return readLocal(key, fallback);
+}
+// 환자 본인 기기가 서버에서 받은 사본을 기기에 넣는다 (동기화 신호 없이)
+export const localSnap = async () => ({ plans: await readLocal<Plan[]>('plans', []), logs: await readLocal<Log[]>('logs', []), visits: await readLocal<Visit[]>('visits', []) });
+export const writeLocalSnap = async (s: { plans: unknown[]; logs: unknown[]; visits: unknown[] }) => {
+  await Promise.all(SYNCED.map((k) => AsyncStorage.setItem(k, JSON.stringify(s[k as 'plans']))));
+};
 // 저장할 때마다 알림을 보낸다: 로그인한 환자 계정이 서버에 동기화하는 신호 (lib/auth.tsx)
 let onWrite: (() => void) | null = null;
 export const setOnWrite = (f: (() => void) | null) => {
   onWrite = f;
 };
 const write = async (key: string, v: unknown) => {
+  if (remote && SYNCED.includes(key)) {
+    remote.cache[key] = v;
+    remote.touch();
+    return;
+  }
   await AsyncStorage.setItem(key, JSON.stringify(v));
   onWrite?.();
 };
@@ -80,7 +111,9 @@ export const updatePlan = async (id: string, patch: Partial<Plan>) =>
 export const deletePlan = async (id: string) => write('plans', (await getPlans()).filter((p) => p.id !== id));
 
 // 알림은 진행 중인 계획의 시간대를 모두 합쳐서 예약
-export const allActiveSlots = async () => [...new Set((await activePlans()).flatMap((p) => p.slots))];
+// 알림은 늘 이 기기 본인의 약 기준이다 (보호자가 환자 화면을 보고 있어도 환자의 약으로 알림이 울리면 안 된다)
+export const localActivePlans = async () => (await readLocal<Plan[]>('plans', [])).filter(isActive);
+export const allActiveSlots = async () => [...new Set((await localActivePlans()).flatMap((p) => p.slots))];
 
 // ── 복용 기록 ──
 // 기록 하나 = 그 날·시간대에 이 계획(약 묶음)을 먹었다. plan이 없는 옛 기록은 그 시간대 전체로 본다.
@@ -123,10 +156,10 @@ const applyTimes = (t: Times) => {
   }
 };
 export async function loadTimes() {
-  applyTimes(await read<Times>('times', {}));
+  applyTimes(await readLocal<Times>('times', {}));
 }
 export async function saveTime(id: Slot, hour: number, minute: number) {
-  const t = await read<Times>('times', {});
+  const t = await readLocal<Times>('times', {});
   t[id] = { hour, minute };
   await write('times', t);
   applyTimes(t);

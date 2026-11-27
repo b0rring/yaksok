@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './AppText';
 import Icon from './Icon';
+import Chip from './Chip';
 import DrugCard from './DrugCard';
 import { useDialog } from './Dialog';
 import { syncNotifications } from '../lib/notify';
@@ -91,8 +92,10 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
         {p.guess && <Text style={styles.guess}>병명은 AI가 약을 보고 짐작했어요</Text>}
 
         {/* 복용 기간: 진행 막대 */}
+        <View style={styles.period}>
+          <Text style={styles.blockLabel}>복용 기간</Text>
         {isActiveCard ? (
-          <View style={styles.period}>
+          <View style={{ gap: 8 }}>
             <View style={styles.periodHead}>
               <Text style={styles.periodText}>
                 {p.days}일 중 <Text style={styles.periodNow}>{n}일째</Text>
@@ -112,10 +115,12 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
             <Text style={styles.periodEndText}>{p.stopped ? `${md(p.stopped)}에 중지했어요` : `${md(end)}에 끝났어요`}</Text>
           </View>
         )}
+        </View>
 
         {/* 처방 정보: 병원·약국·조제일 */}
         {hasMeta ? (
           <View style={styles.meta}>
+            <Text style={styles.blockLabel}>처방 정보</Text>
             {!!p.hospital && metaRow('병원', p.hospital, 'HP8')}
             {!!p.pharmacy && metaRow('약국', p.pharmacy, 'PM9')}
             {!!p.prescribedOn && metaRow('조제일', md(p.prescribedOn))}
@@ -133,6 +138,8 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
           </Pressable>
         ) : null}
 
+        <View style={styles.drugs}>
+        <Text style={styles.blockLabel}>약 {p.drugs.length}가지</Text>
         {p.drugs.map((name) => {
           const info = p.info?.find((d) => d.name === name);
           const k = `${p.id}:${name}`;
@@ -140,7 +147,10 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
           return (
             <View key={name} style={styles.drug}>
               <View style={styles.drugHead}>
-                <Text style={styles.drugName}>{name}</Text>
+                <View style={styles.drugTitle}>
+                  <Text style={styles.drugName}>{name}</Text>
+                  {!!info?.dose && <Chip small text={`1회 ${info.dose}`} />}
+                </View>
                 {!!info && (
                   <Pressable accessibilityRole="button" accessibilityLabel={on ? `${name} 설명 접기` : `${name} 설명 보기`} onPress={() => setOpen(on ? null : k)} style={({ pressed }) => [styles.more, pressed && { opacity: 0.6 }]}>
                     <Text style={styles.moreText}>{on ? '접기' : '자세히'}</Text>
@@ -153,6 +163,7 @@ export default function PlanList({ all, reload }: { all: Plan[]; reload: () => u
             </View>
           );
         })}
+        </View>
 
         <View style={styles.actions}>
           {(isActiveCard
@@ -194,37 +205,40 @@ const styles = StyleSheet.create({
   card: { ...CARD, padding: S.item, gap: S.in },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   title: { flex: 1, fontSize: 20, lineHeight: 28, fontWeight: '800', color: C.text },
-  round: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: C.border, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  pen: { backgroundColor: C.soft, borderWidth: 0 },
+  round: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
+  pen: {},
   guess: { fontSize: 16, color: C.orange },
   // 복용 기간
-  period: { gap: 8 },
+  blockLabel: { fontSize: 16, fontWeight: '800', color: C.primary },
+  period: { gap: 8, backgroundColor: C.soft, borderRadius: 12, padding: S.item },
   periodHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   periodText: { fontSize: 18, color: C.sub },
   periodNow: { fontSize: 20, fontWeight: '800', color: C.primary },
   periodEnd: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   periodEndText: { fontSize: 16, color: C.sub },
-  track: { height: 8, borderRadius: 4, backgroundColor: C.soft, overflow: 'hidden' },
+  track: { height: 8, borderRadius: 4, backgroundColor: '#fff', overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4, backgroundColor: C.primary },
   // 처방 정보
   meta: { backgroundColor: C.soft, borderRadius: 12, padding: S.item, gap: 8 },
+  drugs: { backgroundColor: C.soft, borderRadius: 12, padding: S.item, gap: S.in },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: S.in, minHeight: 44 },
   metaLabel: { width: 60, fontSize: 16, fontWeight: '800', color: C.sub },
   metaValue: { flex: 1, fontSize: 18, lineHeight: 24, fontWeight: '700', color: C.text },
-  metaLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, borderTopWidth: 1, borderTopColor: C.mist },
+  metaLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: S.in },
   metaLinkText: { fontSize: 17, fontWeight: '800', color: C.primary },
   ai: { fontSize: 15, color: C.ai },
   addMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
   addMetaText: { fontSize: 17, fontWeight: '800', color: C.primary },
   // 약
-  drug: { gap: 4 },
-  drugHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in },
+  drug: { gap: 4, backgroundColor: '#fff', borderRadius: 12, padding: S.in },
+  drugHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  drugTitle: { flex: 1, gap: 4 },
   drugName: { fontSize: 18, lineHeight: 24, fontWeight: '700', color: C.text, flexShrink: 1 },
-  more: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, borderColor: C.border, backgroundColor: '#fff' },
+  more: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: C.fill },
   moreText: { fontSize: 16, fontWeight: '800', color: C.primary },
   effect: { fontSize: 18, lineHeight: 24, color: C.sub },
   actions: { flexDirection: 'row', gap: S.in, marginTop: 4 },
-  action: { flex: 1, minHeight: 56, borderRadius: 28, borderWidth: 1.5, borderColor: C.border, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  action: { flex: 1, minHeight: 56, borderRadius: 28, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
   actionMain: { backgroundColor: C.primary, borderColor: C.primary },
-  actionText: { fontSize: 20, fontWeight: '800', color: C.text },
+  actionText: { fontSize: 20, fontWeight: '800', color: C.primary },
 });

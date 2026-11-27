@@ -7,14 +7,22 @@ import { Text } from '../../components/AppText';
 import BigButton from '../../components/BigButton';
 import { useDialog } from '../../components/Dialog';
 import Chip from '../../components/Chip';
+import FilterRow, { FilterBox } from '../../components/FilterRow';
 import TabTitle from '../../components/TabTitle';
 import Icon from '../../components/Icon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useJobs } from '../../lib/jobs';
 import { useCalendarData } from '../../lib/calendarData';
+import { addDays, today } from '../../lib/store';
 import { C, CARD, S } from '../../lib/theme';
 
 type Phase = 'idle' | 'recording';
+type Period = 'all' | 'month' | '3m';
+const PERIODS: { id: Period; label: string }[] = [
+  { id: 'all', label: '전체' },
+  { id: 'month', label: '이번 달' },
+  { id: '3m', label: '최근 3개월' },
+];
 
 const lengthText = (sec: number) => (sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 60}초` : `${sec}초`);
 
@@ -27,11 +35,21 @@ export default function Record() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [sec, setSec] = useState(0);
   const { visits, reload } = useCalendarData();
+  const [period, setPeriod] = useState<Period>('all');
+  const [hosp, setHosp] = useState('all'); // 병원 이름 또는 'all'
   const { startVisit, version } = useJobs();
   // 진료 기록이 새로 저장되면 목록을 다시 불러온다
   useEffect(() => {
     reload();
   }, [version]);
+
+  // 걸러 보기: 기간 + 병원. 병원이 둘 이상일 때만 병원 칩을 보여 준다
+  const hospitals = [...new Set(visits.map((v) => v.hospital).filter(Boolean))];
+  const since = period === 'month' ? `${today().slice(0, 7)}-01` : period === '3m' ? addDays(today(), -90) : '';
+  const shown = [...visits]
+    .filter((v) => (!since || v.date >= since) && (hosp === 'all' || v.hospital === hosp))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  const filtered = period !== 'all' || hosp !== 'all';
 
   const start = async () => {
     if (phase !== 'idle') return;
@@ -152,9 +170,19 @@ export default function Record() {
           </View>
         </View>
         <View style={styles.group}>
-        <Text style={styles.section}>지난 진료 기록</Text>
+        <View style={styles.sectionRow}>
+          <Text style={styles.section}>지난 진료 기록</Text>
+          {visits.length > 0 && <Text style={styles.count}>{filtered ? `${shown.length}건 (걸러 봄)` : `${shown.length}건`}</Text>}
+        </View>
+        {visits.length > 0 && (
+          <FilterBox>
+            <FilterRow label="기간" options={PERIODS} value={period} onPick={setPeriod} />
+            {hospitals.length > 1 && <FilterRow label="병원" options={[{ id: 'all', label: '전체' }, ...hospitals.map((h) => ({ id: h, label: h }))]} value={hosp} onPick={setHosp} />}
+          </FilterBox>
+        )}
         {!visits.length && <Text style={styles.empty}>아직 진료 기록이 없어요</Text>}
-        {[...visits].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).map((v) => (
+        {!!visits.length && !shown.length && <Text style={styles.empty}>조건에 맞는 기록이 없어요. 위에서 다른 기간이나 병원을 골라 보세요.</Text>}
+        {shown.map((v) => (
           <Pressable
             key={v.id}
             accessibilityRole="button"
@@ -189,17 +217,19 @@ const styles = StyleSheet.create({
   text: { fontSize: 20, fontWeight: '800', textAlign: 'center', color: C.text },
   micCircle: { ...CARD, alignSelf: 'center', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   hint: { fontSize: 18, textAlign: 'center', color: C.sub, marginBottom: 12 },
-  list: { padding: S.page, paddingBottom: 36, gap: S.section },
+  list: { paddingHorizontal: S.page, paddingTop: 8, paddingBottom: 102, gap: S.section },
   group: { gap: S.gap },
   pair: { flexDirection: 'row', gap: S.in },
   startCard: { ...CARD, padding: S.pad, gap: S.in },
+  sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  count: { fontSize: 16, fontWeight: '700', color: C.sub },
   section: { fontSize: 22, fontWeight: '800', color: C.text },
   empty: { fontSize: 18, color: C.sub },
   visit: { ...CARD, padding: S.pad, gap: S.gap },
   vTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pen: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
   vBody: { gap: 8 },
-  vFoot: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: S.in },
+  vFoot: { minHeight: 44, justifyContent: 'center', borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: S.item },
   vDate: { fontSize: 18, fontWeight: '700', color: C.sub },
   vHospital: { fontSize: 20, fontWeight: '800', color: C.text },
   vSub: { fontSize: 18, lineHeight: 24, color: C.sub },

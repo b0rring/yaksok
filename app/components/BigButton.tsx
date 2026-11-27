@@ -23,13 +23,14 @@ export default function BigButton({ label, onPress, color = C.primary, variant =
         { transform: [{ scale: pressed ? 0.98 : 1 }], opacity: pressed ? 0.88 : 1 },
       ]}
     >
-      <Text style={[styles.label, secondary && { color: C.text }]}>{label}</Text>
+      <Text style={[styles.label, secondary && { color: C.primary }]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   btn: { minHeight: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
-  secondary: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border },
+  // 버튼은 채운 바탕: 흰 바탕+테두리인 카드와 한눈에 구별된다 (으뜸 버튼=진한 초록, 보조 버튼=연초록)
+  secondary: { backgroundColor: C.fill },
   label: { color: '#fff', fontSize: 20, fontWeight: '800', textAlign: 'center' },
 });
