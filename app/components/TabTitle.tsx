@@ -8,16 +8,16 @@ import { C, S } from '../lib/theme';
 
 // 모든 탭 맨 위의 제목: 왼쪽 정렬, 탭 이름과 같은 글, 오른쪽에는 필요할 때만 버튼. 첫 구역과는 가깝게(wrap의 구역 간격을 되돌림).
 // 보호자가 연결된 환자의 화면으로 전환해 있으면 제목 아래에 "누구 화면인지"와 돌아가는 버튼을 항상 보여 준다.
-export default function TabTitle({ title, right, above }: { title: string; right?: ReactNode; above?: ReactNode }) {
+export default function TabTitle({ title, right, below }: { title: string; right?: ReactNode; below?: ReactNode }) {
   const { viewing, switchTo } = useAuth();
   const ask = useDialog();
   return (
     <View style={{ marginBottom: -S.gap }}>
-      {above}
       <View style={styles.row}>
         <Text style={styles.title}>{title}</Text>
         {right}
       </View>
+      {below}
       {!!viewing && (
         <View style={styles.band}>
           <Text style={styles.bandText}>{viewing.name}님 화면이에요</Text>

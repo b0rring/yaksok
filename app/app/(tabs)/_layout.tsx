@@ -19,6 +19,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        sceneStyle: { backgroundColor: C.bg },
         animation: 'fade', // 탭을 옮길 때 화면이 살짝 부드럽게 바뀐다
         headerTitleStyle: { fontSize: 20, fontWeight: '800', color: C.text },
         headerStyle: { backgroundColor: C.bg },

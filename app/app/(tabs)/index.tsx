@@ -88,20 +88,6 @@ export default function Home() {
       <ScrollView contentContainerStyle={styles.wrap} showsVerticalScrollIndicator={false}>
         <TabTitle
           title="홈"
-          above={
-            <View style={styles.top}>
-              <View style={styles.dateGroup}>
-                <Text style={styles.dateBig}>{dateText}</Text>
-                <View style={styles.weekBadge}>
-                  <Text style={styles.weekText}>{weekday}</Text>
-                </View>
-              </View>
-              <View style={styles.timeBox}>
-                <Icon name="clock" size={20} color={C.primary} />
-                <Text style={styles.timeText}>{clock}</Text>
-              </View>
-            </View>
-          }
           right={
             <Pressable accessibilityRole="button" accessibilityLabel="설정" onPress={() => router.push('/more')} style={({ pressed }) => [styles.gear, pressed && { opacity: 0.6 }]}>
               <Icon name="settings" size={28} color={C.primary} />
@@ -111,12 +97,26 @@ export default function Home() {
 
         <AccountSwitch />
 
-        {/* 오늘 먹을 약 + 복용 진행도: 한 구역 안에서 함께 본다 (진행 카드 → 시간대 카드들) */}
-        <Section flush icon="pill" title="오늘 먹을 약">
+        {/* 오늘 먹을 약 + 복용 진행도: 홈의 고유 구역(제목 막대 없음). 진행 카드 → 시간대 카드들 */}
+        <View style={styles.today}>
           <View style={styles.status}>
+              <View style={styles.top}>
+                <View style={styles.dateGroup}>
+                  <Text style={styles.dateBig}>{dateText}</Text>
+                  <View style={styles.weekBadge}>
+                    <Text style={styles.weekText}>{weekday}</Text>
+                  </View>
+                </View>
+                <View style={styles.timeBox}>
+                  <Icon name="clock" size={20} color={C.primary} />
+                  <Text style={styles.timeText}>{clock}</Text>
+                </View>
+              </View>
+            <View style={styles.statusBody}>
             <Text style={styles.statusText}>{summary}</Text>
             {total > 0 && <PillGauge total={total} done={doneN} />}
             {!!hint && <Text style={[styles.hint, !!dueNow && { color: C.orange }]}>{hint}</Text>}
+            </View>
           </View>
           {!slots.length && <BigButton label="약 사진 찍어서 추가" onPress={() => router.navigate('/scan')} />}
         {ordered.map((s) => {
@@ -135,7 +135,7 @@ export default function Home() {
                 {/* 묶음이 둘 이상이고 아직 남았을 때만, 머리줄 오른쪽에 "모두 체크"(겹친 체크 아이콘). 카드 높이는 변하지 않는다 */}
                 {st !== 'done' && s.items.length > 1 && (
                   <Pressable accessibilityRole="button" accessibilityLabel={`${s.label} 약 모두 체크`} onPress={() => eatAll(s.id)} style={[styles.allBtn, now && styles.allNow]}>
-                    <Icon name="checks" size={24} color={now ? '#fff' : C.primary} stroke={2.6} />
+                    <Icon name="checks" size={22} color={now ? C.orange : C.primary} stroke={2.6} />
                   </Pressable>
                 )}
               </View>
@@ -194,7 +194,7 @@ export default function Home() {
             </Tint>
           );
         })}
-        </Section>
+        </View>
 
         <Section icon="calendar" title="캘린더">
           <CalendarView mode="week" />
@@ -215,15 +215,16 @@ const styles = StyleSheet.create({
   date: { fontSize: 18, color: C.sub },
   gear: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   // 날짜 | 요일 | 시각: 진행 카드 맨 위에 같은 폭의 세 칸으로 나눠 놓는다
-  // 맨 위 한 줄: 왼쪽 날짜 + 요일 단추, 오른쪽 시각
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40, marginBottom: S.in },
+  // 진행 카드 맨 위 한 줄: 왼쪽 날짜 + 요일 단추, 오른쪽 시각
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 56, paddingHorizontal: S.item, backgroundColor: C.fill, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
   dateGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dateBig: { fontSize: 22, fontWeight: '800', color: C.text },
   weekBadge: { borderRadius: 14, backgroundColor: C.primary, paddingHorizontal: 12, paddingVertical: 3 },
   weekText: { fontSize: 16, fontWeight: '800', color: '#fff' },
-  timeBox: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 20, backgroundColor: C.fill, paddingHorizontal: 14, minHeight: 40 },
+  timeBox: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 20, backgroundColor: '#fff', paddingHorizontal: 14, minHeight: 40 },
   timeText: { fontSize: 20, fontWeight: '800', color: C.primary },
-  status: { ...CARD, padding: S.pad, gap: S.in },
+  status: { ...CARD },
+  statusBody: { padding: S.pad, gap: S.in }, // 날짜·시각 줄(위)과 본 요소(아래)를 나눈다
   hint: { fontSize: 18, fontWeight: '800', color: C.sub },
   nowRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   now: { fontSize: 18, fontWeight: '700', color: C.sub },
@@ -242,8 +243,9 @@ const styles = StyleSheet.create({
   slotTime: { flexShrink: 0, fontSize: 16, color: C.sub },
   slotName: { fontSize: 20, fontWeight: '800', color: C.text, flexShrink: 1 },
   chip: { flexShrink: 0, fontSize: 16, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, overflow: 'hidden' },
-  allBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.fill, alignItems: 'center', justifyContent: 'center' },
-  allNow: { backgroundColor: C.orange, borderColor: C.orange },
+  // 모두 체크: 약 줄의 체크칸처럼 속이 빈 동그라미(굵은 테두리) 안에 겹친 체크 아이콘
+  allBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: C.border, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  allNow: { borderColor: C.orange },
   chipDone: { backgroundColor: '#4F7A60', color: '#fff' },
   chipLate: { backgroundColor: C.orange, color: '#fff' },
   rows: { gap: 8 },
@@ -261,6 +263,7 @@ const styles = StyleSheet.create({
   itemSub: { fontSize: 18, color: C.sub },
   // 홈은 두 구역: 오늘 먹을 약(체크리스트) / 캘린더. 구역마다 제목을 달고, 둘 사이는 줄과 넓은 간격으로 나눈다.
   part: { gap: S.gap },
+  today: { gap: S.in }, // 오늘 먹을 약은 홈의 고유 구역이라 제목 막대 없이 홈 제목 바로 아래에 둔다
   partTitle: { fontSize: 22, fontWeight: '800', color: C.text },
   calPart: { gap: S.gap },
   // 구역 제목은 카드가 아니라 "선 — 아이콘·제목 — 선" 구분자: 카드(네모 상자)와 모양이 달라 한눈에 구역이 나뉜다
